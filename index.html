@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Ranked Zone</title>
+
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --card:#111826;
+      --card2:#0f1623;
+      --text:#e8eef7;
+      --muted:#9fb0c5;
+      --line:#1d2a3d;
+      --ok:#2ecc71;
+      --bad:#ff5c5c;
+      --btn:#1e2a3d;
+      --btn2:#22324a;
+      --accent:#5aa9ff;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 800px at 20% -10%, rgba(90,169,255,.18), transparent 60%),
+                  radial-gradient(900px 700px at 120% 30%, rgba(90,255,200,.10), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      padding:14px;
+    }
+    .wrap{max-width:520px;margin:0 auto}
+    .top{
+      display:flex;align-items:center;justify-content:space-between;
+      gap:12px;margin:4px 2px 14px;
+    }
+    .brand{
+      display:flex;align-items:center;gap:10px;
+    }
+    .logo{
+      width:40px;height:40px;border-radius:50%;
+      background: linear-gradient(135deg, rgba(90,169,255,.9), rgba(200,220,255,.9));
+      display:grid;place-items:center;
+      color:#0b0f14;font-weight:900;letter-spacing:.5px;
+      box-shadow: var(--shadow);
+    }
+    .h1{font-size:18px;font-weight:800;line-height:1.1}
+    .sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .pill{
+      font-size:12px;color:var(--muted);
+      padding:8px 10px;border:1px solid var(--line);
+      border-radius:999px;background: rgba(17,24,38,.6);
+    }
+
+    .tabs{
+      display:flex;gap:10px;margin:0 0 12px;
+    }
+    .tab{
+      flex:1;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background: rgba(17,24,38,.55);
+      color:var(--muted);
+      font-weight:700;
+      text-align:center;
+      cursor:pointer;
+      user-select:none;
+    }
+    .tab.active{
+      background: linear-gradient(180deg, rgba(30,42,61,.95), rgba(17,24,38,.55));
+      color:var(--text);
+      border-color: rgba(90,169,255,.35);
+      box-shadow: 0 0 0 1px rgba(90,169,255,.15) inset;
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(17,24,38,.85), rgba(15,22,35,.75));
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      padding:14px;
+      box-shadow: var(--shadow);
+      margin: 0 0 12px;
+    }
+    .row{display:flex;gap:10px;align-items:center;justify-content:space-between}
+    .label{font-size:12px;color:var(--muted)}
+    .value{font-weight:800}
+    .hr{height:1px;background:var(--line);margin:12px 0}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .btn{
+      width:100%;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(34,50,74,.9), rgba(30,42,61,.85));
+      color:var(--text);
+      font-weight:800;
+      cursor:pointer;
+    }
+    .btn.secondary{
+      background: rgba(17,24,38,.55);
+      color:var(--muted);
+    }
+    .btn:active{transform:translateY(1px)}
+    .tag{
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:12px;padding:6px 10px;border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(17,24,38,.55);
+      color: var(--muted);
+    }
+    .dot{width:8px;height:8px;border-radius:50%}
+    .dot.ok{background:var(--ok)}
+    .dot.bad{background:var(--bad)}
+    .hint{font-size:12px;color:var(--muted);line-height:1.35}
+    .hidden{display:none}
+    .maps{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .chip{
+      padding:10px 12px;border-radius:999px;border:1px solid var(--line);
+      background: rgba(17,24,38,.55);color:var(--text);font-weight:800;
+      cursor:pointer; user-select:none;
+    }
+    .chip.off{color:var(--muted);font-weight:700}
+    .toast{
+      position:fixed;left:50%;transform:translateX(-50%);
+      bottom:18px;max-width:520px;width:calc(100% - 28px);
+      background: rgba(17,24,38,.92);
+      border:1px solid rgba(90,169,255,.25);
+      border-radius: 14px;
+      padding:12px 14px;
+      box-shadow: var(--shadow);
+      color: var(--text);
+      font-size:13px;
+      display:none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <div class="logo">RZ</div>
+        <div>
+          <div class="h1">Ranked Zone</div>
+          <div class="sub">Mini App • Дуэли • Рейтинг</div>
+        </div>
+      </div>
+      <div class="pill" id="tgStatus">Telegram: ...</div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" id="tabProfile">Профиль</div>
+      <div class="tab" id="tabMatch">Матчмейкинг</div>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="screenProfile">
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="label">Telegram ID</div>
+            <div class="value" id="tgId">—</div>
+          </div>
+          <div class="tag" id="verifyTag">
+            <span class="dot bad" id="verifyDot"></span>
+            <span id="verifyText">Не проверен</span>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="grid">
+          <div>
+            <div class="label">Standoff ID</div>
+            <div class="value" id="soId">—</div>
+          </div>
+          <div>
+            <div class="label">Ник</div>
+            <div class="value" id="soNick">—</div>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="grid">
+          <button class="btn secondary" id="btnFill">Заполнить профиль</button>
+          <button class="btn" id="btnOpenBot">Открыть бота</button>
+        </div>
+
+        <p class="hint" style="margin:12px 2px 0">
+          Сейчас это MVP без базы. Следующий шаг — подключим Firebase и будем сохранять профиль/статус проверки.
+        </p>
+      </div>
+    </div>
+
+    <!-- MATCH -->
+    <div id="screenMatch" class="hidden">
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="label">Статус</div>
+            <div class="value" id="mmStatus">Готов к поиску</div>
+          </div>
+          <div class="tag">
+            <span class="dot bad" id="mmDot"></span>
+            <span id="mmGate">Доступ закрыт</span>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="label">Карты (выбери минимум 1)</div>
+        <div class="maps" id="maps">
+          <div class="chip" data-map="Cableway">Cableway</div>
+          <div class="chip" data-map="Pipeline">Pipeline</div>
+          <div class="chip" data-map="Bridge">Bridge</div>
+          <div class="chip" data-map="Pool">Pool</div>
+          <div class="chip" data-map="Temple">Temple</div>
+          <div class="chip" data-map="Yard">Yard</div>
+        </div>
+
+        <div class="hr"></div>
+
+        <button class="btn" id="btnQueue">⚔️ Встать в очередь</button>
+        <p class="hint" style="margin:12px 2px 0">
+          Сейчас кнопка только показывает логику. После Firebase: будет запись в очередь и поиск соперника.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  const tg = window.Telegram?.WebApp;
+
+  function toast(msg){
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.style.display = "block";
+    clearTimeout(window.__toastTimer);
+    window.__toastTimer = setTimeout(()=> t.style.display="none", 2200);
+  }
+
+  // Tabs
+  const tabProfile = document.getElementById("tabProfile");
+  const tabMatch = document.getElementById("tabMatch");
+  const screenProfile = document.getElementById("screenProfile");
+  const screenMatch = document.getElementById("screenMatch");
+
+  function setTab(name){
+    const isProfile = name === "profile";
+    tabProfile.classList.toggle("active", isProfile);
+    tabMatch.classList.toggle("active", !isProfile);
+    screenProfile.classList.toggle("hidden", !isProfile);
+    screenMatch.classList.toggle("hidden", isProfile);
+  }
+
+  tabProfile.onclick = ()=> setTab("profile");
+  tabMatch.onclick = ()=> setTab("match");
+
+  // Init Telegram
+  const tgStatus = document.getElementById("tgStatus");
+  const tgIdEl = document.getElementById("tgId");
+
+  let tgId = null;
+  let verified = false; // пока вручную false, позже подтянем из Firebase
+
+  if (tg) {
+    tg.ready();
+    tg.expand();
+    const user = tg.initDataUnsafe?.user;
+    tgStatus.textContent = "Telegram: OK";
+    if (user?.id) {
+      tgId = user.id;
+      tgIdEl.textContent = String(tgId);
+    } else {
+      tgIdEl.textContent = "не получен";
+    }
+  } else {
+    tgStatus.textContent = "Telegram: нет";
+    tgIdEl.textContent = "открой из Telegram";
+  }
+
+  // Fake profile placeholders (позже Firestore)
+  document.getElementById("soId").textContent = "—";
+  document.getElementById("soNick").textContent = "—";
+
+  // Verification UI
+  const verifyDot = document.getElementById("verifyDot");
+  const verifyText = document.getElementById("verifyText");
+
+  const mmDot = document.getElementById("mmDot");
+  const mmGate = document.getElementById("mmGate");
+
+  function setVerified(v){
+    verified = v;
+
+    verifyDot.classList.toggle("ok", v);
+    verifyDot.classList.toggle("bad", !v);
+    verifyText.textContent = v ? "Проверен" : "Не проверен";
+
+    mmDot.classList.toggle("ok", v);
+    mmDot.classList.toggle("bad", !v);
+    mmGate.textContent = v ? "Доступ открыт" : "Доступ закрыт";
+
+    document.getElementById("btnQueue").textContent = v ? "⚔️ Встать в очередь" : "✅ Пройди проверку в боте";
+  }
+
+  // пока по умолчанию false
+  setVerified(false);
+
+  // Maps selection
+  const selected = new Set();
+  document.getElementById("maps").addEventListener("click", (e)=>{
+    const chip = e.target.closest(".chip");
+    if(!chip) return;
+    const name = chip.dataset.map;
+    if(selected.has(name)){
+      selected.delete(name);
+      chip.classList.add("off");
+    } else {
+      selected.add(name);
+      chip.classList.remove("off");
+    }
+  });
+
+  // Buttons
+  document.getElementById("btnFill").onclick = ()=>{
+    toast("Скоро: форма профиля (через Firebase)");
+  };
+
+  document.getElementById("btnOpenBot").onclick = ()=>{
+    if(tg) {
+      toast("Открой чат с ботом и пройди проверку ✅");
+      // Можно закрывать вебапп
+      // tg.close();
+    } else {
+      toast("Открой Mini App внутри Telegram");
+    }
+  };
+
+  document.getElementById("btnQueue").onclick = ()=>{
+    if(!verified){
+      toast("Сначала пройди проверку в боте ✅");
+      return;
+    }
+    if(selected.size < 1){
+      toast("Выбери минимум 1 карту");
+      return;
+    }
+    toast("MVP: позже добавим очередь в Firebase");
+  };
+</script>
+</body>
+</html>
