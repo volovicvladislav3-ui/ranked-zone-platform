@@ -1,519 +1,181 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ranked Zone</title>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    :root{
-      --bg:#0a0a0b;
-      --bg2:#0f0f12;
-      --card:#141418;
-      --card2:#0f0f14;
-      --line:#26262d;
-      --text:#f3f4f7;
-      --muted:#a9adba;
-
-      --fire1:#ff6a00;
-      --fire2:#ffae00;
-      --gold:#ffbf3c;
-
-      --ok:#2ecc71;
-      --bad:#ff4d4d;
-
-      --radius:18px;
-      --shadow: 0 14px 40px rgba(0,0,0,.55);
-      --glow: 0 0 0 1px rgba(255,138,0,.18), 0 0 40px rgba(255,106,0,.12);
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(180deg, #0f0f0f, #1a1a1a);
+      color: white;
     }
 
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      color:var(--text);
-      background:
-        radial-gradient(1000px 700px at 20% 0%, rgba(255,106,0,.18), transparent 60%),
-        radial-gradient(900px 700px at 110% 30%, rgba(255,174,0,.10), transparent 55%),
-        linear-gradient(180deg, var(--bg), var(--bg2));
-      padding:14px;
+    .container {
+      padding: 20px;
     }
 
-    .wrap{max-width:520px;margin:0 auto; padding-bottom: 16px;}
-
-    /* Header */
-    .header{
-      background: linear-gradient(180deg, rgba(20,20,24,.92), rgba(15,15,20,.78));
-      border:1px solid rgba(255,138,0,.22);
-      border-radius: 22px;
-      padding:14px;
-      box-shadow: var(--shadow), var(--glow);
-      position: sticky;
-      top: 10px;
-      z-index: 10;
-      backdrop-filter: blur(8px);
-    }
-    .headRow{display:flex;gap:12px;align-items:center;justify-content:space-between}
-    .brand{display:flex;gap:12px;align-items:center;min-width:0}
-    .logo{
-      width:44px;height:44px;border-radius:14px;
-      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.22), transparent 45%),
-                  linear-gradient(135deg, var(--fire1), var(--fire2));
-      box-shadow: 0 10px 30px rgba(255,106,0,.18);
-      display:grid;place-items:center;
-      font-weight:1000;letter-spacing:.5px;
-      color:#120a00;
-      user-select:none;
-    }
-    .titleWrap{min-width:0}
-    .title{font-size:18px;font-weight:950;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .subtitle{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .pill{
-      font-size:12px;
-      padding:8px 10px;border-radius:999px;
-      border:1px solid var(--line);
-      background: rgba(10,10,12,.55);
-      color:var(--muted);
-      white-space:nowrap;
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #ff7a00;
     }
 
-    /* Tabs */
-    .tabs{
-      display:flex;gap:10px;margin:12px 0 10px;
-    }
-    .tab{
-      flex:1;
-      padding:12px 12px;
-      border-radius:16px;
-      border:1px solid var(--line);
-      background: rgba(20,20,24,.65);
-      color:var(--muted);
-      font-weight:900;
-      text-align:center;
-      cursor:pointer;
-      user-select:none;
-    }
-    .tab.active{
-      background: linear-gradient(180deg, rgba(255,106,0,.22), rgba(20,20,24,.65));
-      border-color: rgba(255,138,0,.35);
-      color:var(--text);
-      box-shadow: 0 0 0 1px rgba(255,138,0,.12) inset;
+    .card {
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 15px;
     }
 
-    /* Cards */
-    .card{
-      background: linear-gradient(180deg, rgba(20,20,24,.90), rgba(15,15,20,.80));
-      border:1px solid var(--line);
-      border-radius: var(--radius);
-      padding:14px;
-      box-shadow: var(--shadow);
-      margin: 0 0 12px;
-    }
-    .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .label{font-size:12px;color:var(--muted)}
-    .value{font-weight:950}
-    .hr{height:1px;background:var(--line);margin:12px 0}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-
-    /* Status tag */
-    .tag{
-      display:inline-flex;align-items:center;gap:8px;
-      padding:8px 10px;border-radius:999px;
-      border:1px solid var(--line);
-      background: rgba(10,10,12,.45);
-      color:var(--muted);
-      font-size:12px;
-      font-weight:800;
-    }
-    .dot{width:8px;height:8px;border-radius:50%}
-    .dot.ok{background:var(--ok)}
-    .dot.bad{background:var(--bad)}
-    .dot.warn{background: var(--gold)}
-
-    /* Buttons */
-    .btn{
-      width:100%;
-      padding:13px 12px;
-      border-radius:16px;
-      border:1px solid var(--line);
-      background: rgba(20,20,24,.55);
-      color:var(--text);
-      font-weight:950;
-      cursor:pointer;
-    }
-    .btn.secondary{color:var(--muted)}
-    .btn.fire{
-      border-color: rgba(255,138,0,.35);
-      background: linear-gradient(180deg, rgba(255,106,0,.95), rgba(255,174,0,.92));
-      color:#1a0f00;
-      box-shadow: 0 12px 34px rgba(255,106,0,.22);
-    }
-    .btn.fire:active{transform:translateY(1px)}
-    .btn:active{transform:translateY(1px)}
-
-    /* Big CTA */
-    .cta{
-      padding:16px;
-      border-radius:22px;
-      border:1px solid rgba(255,138,0,.25);
-      background:
-        radial-gradient(600px 260px at 30% 0%, rgba(255,174,0,.22), transparent 55%),
-        linear-gradient(180deg, rgba(20,20,24,.92), rgba(15,15,20,.76));
-      box-shadow: var(--shadow), var(--glow);
-    }
-    .ctaTitle{font-size:13px;color:var(--muted);font-weight:800}
-    .ctaMain{font-size:20px;font-weight:1000;margin:6px 0 10px}
-    .ctaHint{font-size:12px;color:var(--muted);line-height:1.35}
-
-    /* Maps tiles */
-    .maps{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-    .mapTile{
-      border-radius:18px;
-      border:1px solid var(--line);
-      background:
-        radial-gradient(220px 120px at 30% 20%, rgba(255,106,0,.10), transparent 55%),
-        rgba(20,20,24,.55);
-      padding:14px;
-      cursor:pointer;
-      user-select:none;
-      position:relative;
-      min-height:72px;
-      overflow:hidden;
-    }
-    .mapTile .name{font-weight:1000}
-    .mapTile .mini{font-size:12px;color:var(--muted);margin-top:4px}
-    .mapTile.selected{
-      border-color: rgba(255,138,0,.45);
-      box-shadow: 0 0 0 1px rgba(255,138,0,.18) inset, 0 12px 30px rgba(255,106,0,.10);
-      background:
-        radial-gradient(240px 120px at 30% 20%, rgba(255,174,0,.22), transparent 60%),
-        rgba(20,20,24,.55);
-    }
-    .mapTile.selected::after{
-      content:"✓";
-      position:absolute;
-      right:12px;top:10px;
-      width:26px;height:26px;border-radius:10px;
-      display:grid;place-items:center;
-      background: linear-gradient(180deg, rgba(255,106,0,.95), rgba(255,174,0,.92));
-      color:#1a0f00;
-      font-weight:1000;
-      box-shadow: 0 10px 26px rgba(255,106,0,.20);
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: none;
     }
 
-    .hidden{display:none}
-
-    /* Toast */
-    .toast{
-      position:fixed;left:50%;transform:translateX(-50%);
-      bottom:18px;max-width:520px;width:calc(100% - 28px);
-      background: rgba(20,20,24,.96);
-      border:1px solid rgba(255,138,0,.25);
-      border-radius: 16px;
-      padding:12px 14px;
-      box-shadow: var(--shadow);
-      color: var(--text);
-      font-size:13px;
-      display:none;
+    button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 5px;
     }
 
-    /* Small helper */
-    .muted{color:var(--muted);font-size:12px}
+    .primary {
+      background: #ff7a00;
+      color: black;
+    }
+
+    .secondary {
+      background: #333;
+      color: white;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-weight: bold;
+    }
   </style>
 </head>
-
 <body>
-  <div class="wrap">
 
-    <div class="header">
-      <div class="headRow">
-        <div class="brand">
-          <div class="logo">RZ</div>
-          <div class="titleWrap">
-            <div class="title">Ranked Zone</div>
-            <div class="subtitle">Дуэли • Рейтинг • Турниры (скоро)</div>
-          </div>
-        </div>
-        <div class="pill" id="tgPill">TG: ...</div>
-      </div>
-    </div>
+<div class="container">
+  <h1>Ranked Zone</h1>
 
-    <div class="tabs">
-      <div class="tab active" id="tabProfile">Профиль</div>
-      <div class="tab" id="tabMatch">Матч</div>
-    </div>
-
-    <!-- PROFILE SCREEN -->
-    <div id="screenProfile">
-      <div class="card">
-        <div class="row">
-          <div>
-            <div class="label">Игрок</div>
-            <div class="value" id="playerName">—</div>
-            <div class="muted" id="playerSub">—</div>
-          </div>
-          <div class="tag" id="verifyTag">
-            <span class="dot bad" id="verifyDot"></span>
-            <span id="verifyText">Не проверен</span>
-          </div>
-        </div>
-
-        <div class="hr"></div>
-
-        <div class="grid3">
-          <div>
-            <div class="label">MMR</div>
-            <div class="value" id="mmr">1000</div>
-          </div>
-          <div>
-            <div class="label">Диапазон</div>
-            <div class="value">±150</div>
-          </div>
-          <div>
-            <div class="label">VIP</div>
-            <div class="value" id="vip">Нет</div>
-          </div>
-        </div>
-
-        <div class="hr"></div>
-
-        <div class="grid">
-          <div>
-            <div class="label">Standoff ID</div>
-            <div class="value" id="soId">—</div>
-          </div>
-          <div>
-            <div class="label">Ник</div>
-            <div class="value" id="soNick">—</div>
-          </div>
-        </div>
-
-        <div class="hr"></div>
-
-        <div class="grid">
-          <button class="btn secondary" id="btnEdit">Редактировать</button>
-          <button class="btn fire" id="btnVerify">Пройти проверку</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="row">
-          <div>
-            <div class="label">Инфо</div>
-            <div class="value">Как это работает</div>
-          </div>
-          <div class="tag">
-            <span class="dot warn"></span>
-            <span>Дуэль</span>
-          </div>
-        </div>
-        <div class="hr"></div>
-        <div class="muted" style="line-height:1.45">
-          • Матчмейкинг доступен только <b>проверенным</b> игрокам.<br>
-          • Выбираешь карты → жмёшь “Найти матч”.<br>
-          • Создатель лобби выбирается автоматически (позже).
-        </div>
-      </div>
-    </div>
-
-    <!-- MATCH SCREEN -->
-    <div id="screenMatch" class="hidden">
-
-      <div class="cta">
-        <div class="ctaTitle">Матчмейкинг 1v1 • Дуэль</div>
-        <div class="ctaMain" id="mmTitle">Готов к поиску</div>
-        <button class="btn fire" id="btnQueue">⚔️ НАЙТИ МАТЧ</button>
-        <div class="ctaHint" style="margin-top:10px">
-          Если не находит — расширяем подбор (и просим выбрать больше карт).
-        </div>
-      </div>
-
-      <div style="height:12px"></div>
-
-      <div class="card">
-        <div class="row">
-          <div>
-            <div class="label">Доступ</div>
-            <div class="value" id="gateText">Закрыт</div>
-          </div>
-          <div class="tag">
-            <span class="dot bad" id="gateDot"></span>
-            <span id="gateSmall">Нужна проверка</span>
-          </div>
-        </div>
-
-        <div class="hr"></div>
-
-        <div class="label">Карты (выбери минимум 1)</div>
-        <div class="maps" id="maps">
-          <div class="mapTile selected" data-map="Cableway">
-            <div class="name">Cableway</div>
-            <div class="mini">Дуэль</div>
-          </div>
-          <div class="mapTile selected" data-map="Pipeline">
-            <div class="name">Pipeline</div>
-            <div class="mini">Дуэль</div>
-          </div>
-          <div class="mapTile selected" data-map="Bridge">
-            <div class="name">Bridge</div>
-            <div class="mini">Дуэль</div>
-          </div>
-          <div class="mapTile" data-map="Pool">
-            <div class="name">Pool</div>
-            <div class="mini">Дуэль</div>
-          </div>
-          <div class="mapTile" data-map="Temple">
-            <div class="name">Temple</div>
-            <div class="mini">Дуэль</div>
-          </div>
-          <div class="mapTile" data-map="Yard">
-            <div class="name">Yard</div>
-            <div class="mini">Дуэль</div>
-          </div>
-        </div>
-
-        <div class="hr"></div>
-        <div class="muted">
-          Подбор: <b>MMR ±150</b> • Вход в лобби: <b>5 мин</b> • Матч: <b>15 мин</b>
-        </div>
-      </div>
-
-    </div>
+  <div class="card">
+    <div><b>Telegram ID:</b> <span id="tgId">...</span></div>
+    <div><b>Статус:</b> <span id="verifyStatus">загрузка...</span></div>
   </div>
 
-  <div class="toast" id="toast"></div>
+  <div class="card">
+    <input id="standoffId" placeholder="Standoff ID" />
+    <input id="standoffNick" placeholder="Ник" />
+    <button class="primary" onclick="saveProfile()">Сохранить профиль</button>
+  </div>
+
+  <div class="card">
+    <button class="secondary" onclick="findMatch()">Найти матч</button>
+    <div class="status" id="matchStatus"></div>
+  </div>
+</div>
 
 <script>
-  const tg = window.Telegram?.WebApp;
+  const tg = window.Telegram.WebApp;
+  tg.expand();
 
-  function toast(msg){
-    const t = document.getElementById("toast");
-    t.textContent = msg;
-    t.style.display = "block";
-    clearTimeout(window.__toastTimer);
-    window.__toastTimer = setTimeout(()=> t.style.display="none", 2200);
-  }
+  const supabase = window.supabase.createClient(
+    "https://wbjmvafzgwvspswchghx.supabase.co",
+    "sb_publishable_IkbenyjJMOsjztywoz0KXg_WJ3lHKqm"
+  );
 
-  // Tabs
-  const tabProfile = document.getElementById("tabProfile");
-  const tabMatch = document.getElementById("tabMatch");
-  const screenProfile = document.getElementById("screenProfile");
-  const screenMatch = document.getElementById("screenMatch");
+  const user = tg.initDataUnsafe.user;
+  const tgId = user?.id;
 
-  function setTab(name){
-    const isProfile = name === "profile";
-    tabProfile.classList.toggle("active", isProfile);
-    tabMatch.classList.toggle("active", !isProfile);
-    screenProfile.classList.toggle("hidden", !isProfile);
-    screenMatch.classList.toggle("hidden", isProfile);
-  }
-  tabProfile.onclick = ()=> setTab("profile");
-  tabMatch.onclick = ()=> setTab("match");
+  document.getElementById("tgId").innerText = tgId || "не получен";
 
-  // Telegram init
-  const tgPill = document.getElementById("tgPill");
-  let tgId = null;
-  let tgUsername = null;
-  let tgFirst = null;
+  async function initUser() {
+    if (!tgId) return;
 
-  if (tg) {
-    tg.ready();
-    tg.expand();
-    const user = tg.initDataUnsafe?.user;
-    tgPill.textContent = "TG: OK";
-    tgPill.style.borderColor = "rgba(255,138,0,.25)";
-    if (user?.id) {
-      tgId = user.id;
-      tgUsername = user.username || null;
-      tgFirst = user.first_name || null;
-    } else {
-      tgPill.textContent = "TG: нет user";
+    let { data } = await supabase
+      .from("users")
+      .select("*")
+      .eq("tg_id", tgId)
+      .single();
+
+    if (!data) {
+      await supabase.from("users").insert({
+        tg_id: tgId,
+        username: user.username,
+        first_name: user.first_name
+      });
+
+      data = {
+        verify_status: "none"
+      };
     }
-  } else {
-    tgPill.textContent = "TG: не Telegram";
+
+    updateUI(data);
   }
 
-  // ---------- "данные" (пока заглушка, позже Firebase) ----------
-  // ВАЖНО: сейчас verified false. Потом будем тянуть из Firestore.
-  let verified = false;
+  function updateUI(data) {
+    document.getElementById("verifyStatus").innerText = data.verify_status;
 
-  let standoffId = "";
-  let standoffNick = "";
-  let mmr = 1000;
-  let vip = false;
+    if (data.standoff_id)
+      document.getElementById("standoffId").value = data.standoff_id;
 
-  // UI refs
-  const verifyDot = document.getElementById("verifyDot");
-  const verifyText = document.getElementById("verifyText");
-  const gateDot = document.getElementById("gateDot");
-  const gateSmall = document.getElementById("gateSmall");
-  const gateText = document.getElementById("gateText");
-
-  function applyProfileUI(){
-    document.getElementById("playerName").textContent =
-      tgFirst ? tgFirst : (tgUsername ? "@" + tgUsername : "Игрок");
-
-    document.getElementById("playerSub").textContent =
-      tgId ? ("Telegram ID: " + tgId) : "Открой из Telegram";
-
-    document.getElementById("soId").textContent = standoffId || "—";
-    document.getElementById("soNick").textContent = standoffNick || "—";
-    document.getElementById("mmr").textContent = String(mmr);
-    document.getElementById("vip").textContent = vip ? "Да" : "Нет";
-
-    verifyDot.className = "dot " + (verified ? "ok" : "bad");
-    verifyText.textContent = verified ? "Проверен" : "Не проверен";
-
-    gateDot.className = "dot " + (verified ? "ok" : "bad");
-    gateSmall.textContent = verified ? "Доступ открыт" : "Нужна проверка";
-    gateText.textContent = verified ? "Открыт" : "Закрыт";
-
-    const btnQueue = document.getElementById("btnQueue");
-    btnQueue.textContent = verified ? "⚔️ НАЙТИ МАТЧ" : "✅ ПРОЙДИ ПРОВЕРКУ";
+    if (data.standoff_nick)
+      document.getElementById("standoffNick").value = data.standoff_nick;
   }
 
-  applyProfileUI();
+  async function saveProfile() {
+    const standoffId = document.getElementById("standoffId").value;
+    const standoffNick = document.getElementById("standoffNick").value;
 
-  // Maps selection (tiles)
-  const selected = new Set(["Cableway","Pipeline","Bridge"]); // старт 3 карты
-  document.getElementById("maps").addEventListener("click", (e)=>{
-    const tile = e.target.closest(".mapTile");
-    if(!tile) return;
-    const name = tile.dataset.map;
-    if(selected.has(name)){
-      selected.delete(name);
-      tile.classList.remove("selected");
-    } else {
-      selected.add(name);
-      tile.classList.add("selected");
-    }
-  });
+    await supabase.from("users").update({
+      standoff_id: standoffId,
+      standoff_nick: standoffNick,
+      verify_status: "pending"
+    }).eq("tg_id", tgId);
 
-  // Buttons
-  document.getElementById("btnEdit").onclick = ()=>{
-    toast("Скоро: редактирование профиля (через Firebase)");
-  };
+    alert("Профиль отправлен на проверку");
+    initUser();
+  }
 
-  document.getElementById("btnVerify").onclick = ()=>{
-    toast("Пройди проверку в боте ✅");
-    // можно закрыть миниапп:
-    // tg?.close();
-  };
+  async function findMatch() {
+    const { data } = await supabase
+      .from("users")
+      .select("verify_status, mmr")
+      .eq("tg_id", tgId)
+      .single();
 
-  document.getElementById("btnQueue").onclick = ()=>{
-    if(!verified){
-      toast("Сначала пройди проверку в боте ✅");
+    if (data.verify_status !== "verified") {
+      document.getElementById("matchStatus").innerText =
+        "Матчмейкинг доступен только после проверки.";
       return;
     }
-    if(selected.size < 1){
-      toast("Выбери минимум 1 карту");
-      return;
-    }
-    toast("MVP: дальше подключаем Firebase и очередь");
-  };
+
+    await supabase.from("queue").upsert({
+      tg_id: tgId,
+      mmr: data.mmr,
+      maps: ["duel"]
+    });
+
+    document.getElementById("matchStatus").innerText =
+      "Вы добавлены в очередь.";
+  }
+
+  initUser();
 </script>
+
 </body>
 </html>
