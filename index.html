@@ -1,181 +1,600 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Ranked Zone</title>
 
+  <!-- Telegram WebApp -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(180deg, #0f0f0f, #1a1a1a);
-      color: white;
+    :root{
+      /* Под аву: тёмный графит + оранжевый акцент */
+      --bg0:#070A10;
+      --bg1:#0B1220;
+      --card:#0E1A2B;
+      --card2:#0B1626;
+      --stroke:rgba(255,255,255,.08);
+      --text:#EAF2FF;
+      --muted:rgba(234,242,255,.65);
+      --muted2:rgba(234,242,255,.45);
+
+      --accent:#F5A623;        /* оранжевый */
+      --accent2:#FF7A18;       /* оранжево-красный */
+      --good:#2EE59D;
+      --bad:#FF4D4D;
+
+      --r:18px;
+      --r2:22px;
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
     }
 
-    .container {
-      padding: 20px;
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 900px at 20% 15%, rgba(245,166,35,.13), transparent 55%),
+        radial-gradient(900px 700px at 80% 30%, rgba(255,122,24,.10), transparent 55%),
+        radial-gradient(900px 900px at 40% 110%, rgba(0,160,255,.10), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      min-height:100vh;
+      padding: 18px 16px 24px;
     }
 
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #ff7a00;
+    .wrap{
+      max-width: 820px;
+      margin: 0 auto;
     }
 
-    .card {
-      background: #1e1e1e;
-      padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 15px;
+    .top{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      margin-bottom: 12px;
     }
 
-    input {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 8px;
-      border: none;
+    .logo{
+      width:48px;height:48px;border-radius:16px;
+      background:
+        radial-gradient(16px 16px at 30% 25%, rgba(255,255,255,.18), transparent 60%),
+        linear-gradient(135deg, rgba(245,166,35,.35), rgba(255,122,24,.18)),
+        rgba(255,255,255,.04);
+      border:1px solid var(--stroke);
+      display:grid;
+      place-items:center;
+      box-shadow: 0 16px 40px rgba(0,0,0,.45);
+      font-weight:900;
+      letter-spacing:.5px;
     }
 
-    button {
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 5px;
+    .titleblock{
+      flex:1;
+      min-width:0;
+    }
+    .title{
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .subtitle{
+      margin-top:4px;
+      color:var(--muted);
+      font-size: 13px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
-    .primary {
-      background: #ff7a00;
-      color: black;
+    .pill{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--stroke);
+      color:var(--muted);
+      font-size: 13px;
+      white-space:nowrap;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:50%;
+      background: var(--good);
+      box-shadow: 0 0 0 4px rgba(46,229,157,.15);
     }
 
-    .secondary {
-      background: #333;
-      color: white;
-    }
-
-    .status {
+    .tabs{
       margin-top: 10px;
-      font-weight: bold;
+      display:flex;
+      gap:10px;
+    }
+    .tabbtn{
+      flex:1;
+      padding:14px 14px;
+      border-radius: var(--r2);
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--stroke);
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 16px;
+      cursor:pointer;
+      transition:.15s ease;
+      user-select:none;
+    }
+    .tabbtn.active{
+      background:
+        radial-gradient(500px 200px at 40% 0%, rgba(245,166,35,.20), transparent 60%),
+        rgba(255,255,255,.05);
+      color: var(--text);
+      border-color: rgba(245,166,35,.28);
+      box-shadow: 0 16px 50px rgba(0,0,0,.40);
+    }
+
+    .card{
+      margin-top: 14px;
+      border-radius: 26px;
+      background:
+        radial-gradient(800px 350px at 30% -10%, rgba(245,166,35,.12), transparent 60%),
+        radial-gradient(700px 300px at 90% 10%, rgba(0,160,255,.08), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      overflow:hidden;
+    }
+
+    .row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom: 10px;
+    }
+
+    .label{
+      font-size: 13px;
+      color: var(--muted2);
+      margin-bottom: 6px;
+    }
+    .value{
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing:.2px;
+    }
+
+    .status{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 12px;
+      border-radius: 999px;
+      border:1px solid var(--stroke);
+      background: rgba(0,0,0,.18);
+      font-weight: 800;
+      color: var(--muted);
+      white-space:nowrap;
+    }
+    .status .s-dot{
+      width:8px;height:8px;border-radius:50%;
+      background: var(--bad);
+      box-shadow: 0 0 0 4px rgba(255,77,77,.15);
+    }
+    .status.ok .s-dot{
+      background: var(--good);
+      box-shadow: 0 0 0 4px rgba(46,229,157,.15);
+    }
+
+    .grid2{
+      margin-top: 10px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .field{
+      border-radius: 18px;
+      padding: 14px 14px;
+      background: rgba(0,0,0,.16);
+      border:1px solid var(--stroke);
+    }
+
+    .sep{
+      height:1px;
+      background: rgba(255,255,255,.08);
+      margin: 14px 0;
+    }
+
+    .btnrow{
+      display:flex;
+      gap:12px;
+      margin-top: 12px;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      flex:1;
+      min-width: 180px;
+      padding: 14px 14px;
+      border-radius: 18px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      font-weight: 900;
+      cursor:pointer;
+      transition:.15s ease;
+      user-select:none;
+      text-align:center;
+    }
+    .btn:hover{ transform: translateY(-1px); }
+    .btn.primary{
+      border-color: rgba(245,166,35,.34);
+      background:
+        radial-gradient(500px 160px at 40% 0%, rgba(245,166,35,.28), transparent 65%),
+        rgba(255,255,255,.05);
+    }
+    .btn.orange{
+      background: linear-gradient(135deg, rgba(245,166,35,.95), rgba(255,122,24,.95));
+      border-color: rgba(255,255,255,.10);
+      color:#16110A;
+      box-shadow: 0 18px 55px rgba(245,166,35,.22);
+    }
+
+    .hint{
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .adminBadge{
+      display:none;
+      margin-left:10px;
+      font-size: 12px;
+      font-weight: 900;
+      color: #16110A;
+      background: linear-gradient(135deg, rgba(245,166,35,.95), rgba(255,122,24,.95));
+      padding: 6px 10px;
+      border-radius: 999px;
+    }
+
+    .adminBox{
+      border-radius: 18px;
+      padding: 14px;
+      border:1px dashed rgba(245,166,35,.35);
+      background: rgba(245,166,35,.06);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .small{
+      font-size: 12px;
+      color: var(--muted2);
+    }
+
+    @media (max-width:520px){
+      .grid2{ grid-template-columns: 1fr; }
+      .btn{ min-width: 0; }
     }
   </style>
 </head>
 <body>
+  <div class="wrap">
+    <div class="top">
+      <div class="logo">RZ</div>
+      <div class="titleblock">
+        <div class="title">
+          Ranked Zone
+          <span id="adminBadge" class="adminBadge">АДМИН</span>
+        </div>
+        <div class="subtitle">Mini App • Дуэли • Рейтинг</div>
+      </div>
+      <div class="pill"><span class="dot"></span><span id="tgStatus">Telegram: OK</span></div>
+    </div>
 
-<div class="container">
-  <h1>Ranked Zone</h1>
+    <div class="tabs" id="tabs">
+      <div class="tabbtn active" data-tab="profile">Профиль</div>
+      <div class="tabbtn" data-tab="mm">Матчмейкинг</div>
+      <div class="tabbtn" data-tab="admin" id="adminTabBtn" style="display:none;">Админ</div>
+    </div>
 
-  <div class="card">
-    <div><b>Telegram ID:</b> <span id="tgId">...</span></div>
-    <div><b>Статус:</b> <span id="verifyStatus">загрузка...</span></div>
+    <div class="card" id="card">
+      <!-- PROFILE -->
+      <div id="view-profile">
+        <div class="row">
+          <div>
+            <div class="label">Telegram ID</div>
+            <div class="value" id="tgIdText">не получен</div>
+          </div>
+
+          <div class="status" id="verifyPill">
+            <span class="s-dot"></span>
+            <span id="verifyText">Не проверен</span>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="grid2">
+          <div class="field">
+            <div class="label">Standoff ID</div>
+            <div class="value" id="soIdText">—</div>
+          </div>
+          <div class="field">
+            <div class="label">Ник</div>
+            <div class="value" id="nickText">—</div>
+          </div>
+        </div>
+
+        <div class="btnrow">
+          <div class="btn primary" id="btnFill">Заполнить профиль</div>
+          <div class="btn" id="btnOpenBot">Открыть бота</div>
+        </div>
+
+        <div class="hint">
+          Сейчас это MVP без базы. Следующий шаг — подключим Supabase и будем сохранять профиль/статус проверки.
+        </div>
+      </div>
+
+      <!-- MATCHMAKING -->
+      <div id="view-mm" style="display:none;">
+        <div class="row">
+          <div>
+            <div class="label">Дуэли (как в игре)</div>
+            <div class="value">Поиск матча</div>
+          </div>
+          <div class="status" id="mmGate">
+            <span class="s-dot"></span>
+            <span id="mmGateText">Недоступен</span>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="adminBox" id="mmBox">
+          Чтобы искать матч, нужно пройти проверку в боте.
+          <div class="small" style="margin-top:8px;">
+            (Потом добавим выбор карт: 1 карта минимум, если не нашло — просим выбрать больше.)
+          </div>
+        </div>
+
+        <div class="btnrow">
+          <div class="btn orange" id="btnFindMatch">⚔️ Найти матч</div>
+          <div class="btn" id="btnGoVerify">✅ Пройти проверку</div>
+        </div>
+
+        <div class="hint">
+          Таймер матча: 15 минут (как ты говорил). Ожидание подбора: до 5 минут.
+        </div>
+      </div>
+
+      <!-- ADMIN -->
+      <div id="view-admin" style="display:none;">
+        <div class="row">
+          <div>
+            <div class="label">Админ-панель</div>
+            <div class="value">Заявки</div>
+          </div>
+          <div class="pill"><span class="dot"></span><span>Доступ есть</span></div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="adminBox">
+          Тут будет список заявок на проверку и управление статусами.
+          <br><br>
+          ⚠️ Важно: чтобы админка реально “подтверждала/отклоняла”, нужен безопасный бекенд:
+          <ul>
+            <li>либо твой бот (Python) пишет в Supabase с секретным ключом</li>
+            <li>либо Supabase Edge Function/сервер</li>
+          </ul>
+          Я уже сделал вкладку и проверку “админ/не админ”. Дальше подключим кнопки.
+        </div>
+
+        <div class="btnrow" style="margin-top:14px;">
+          <div class="btn primary" id="btnAdminRefresh">Обновить заявки</div>
+          <div class="btn" id="btnAdminPing">Проверить доступ</div>
+        </div>
+
+        <div class="hint" id="adminHint"></div>
+      </div>
+    </div>
   </div>
 
-  <div class="card">
-    <input id="standoffId" placeholder="Standoff ID" />
-    <input id="standoffNick" placeholder="Ник" />
-    <button class="primary" onclick="saveProfile()">Сохранить профиль</button>
-  </div>
+  <script>
+    // =========================
+    // CONFIG
+    // =========================
+    // Поставь сюда свои Telegram ID админов:
+    const ADMIN_IDS = [
+      8001108991 // твой id (как ты писал)
+      // добавишь ещё: 123456789
+    ];
 
-  <div class="card">
-    <button class="secondary" onclick="findMatch()">Найти матч</button>
-    <div class="status" id="matchStatus"></div>
-  </div>
-</div>
+    // ссылка на бота (чтобы "Открыть бота" работало)
+    // можно оставить пусто, но лучше вставить @username бота:
+    const BOT_LINK = "https://t.me/"; // например: "https://t.me/RankedZoneBot"
 
-<script>
-  const tg = window.Telegram.WebApp;
-  tg.expand();
+    // =========================
+    // TELEGRAM INIT
+    // =========================
+    const tg = window.Telegram?.WebApp;
+    try {
+      tg?.ready();
+      tg?.expand();
+      tg?.setHeaderColor?.("#0B1220");
+      tg?.setBackgroundColor?.("#070A10");
+    } catch(e){}
 
-  const supabase = window.supabase.createClient(
-    "https://wbjmvafzgwvspswchghx.supabase.co",
-    "sb_publishable_IkbenyjJMOsjztywoz0KXg_WJ3lHKqm"
-  );
+    const tgUser = tg?.initDataUnsafe?.user || null;
+    const tgId = tgUser?.id || null;
 
-  const user = tg.initDataUnsafe.user;
-  const tgId = user?.id;
+    // =========================
+    // STATE (пока локально)
+    // =========================
+    // Позже заменим на Supabase (users table), а пока — чтобы интерфейс жил.
+    const state = {
+      tg_id: tgId,
+      standoff_id: localStorage.getItem("rz_standoff_id") || "",
+      nick: localStorage.getItem("rz_nick") || "",
+      verify_status: localStorage.getItem("rz_verify") || "none", // none/pending/verified/rejected
+    };
 
-  document.getElementById("tgId").innerText = tgId || "не получен";
+    // =========================
+    // UI HELPERS
+    // =========================
+    const $ = (id)=>document.getElementById(id);
 
-  async function initUser() {
-    if (!tgId) return;
+    function renderProfile(){
+      $("tgIdText").textContent = state.tg_id ? String(state.tg_id) : "не получен";
+      $("soIdText").textContent = state.standoff_id ? state.standoff_id : "—";
+      $("nickText").textContent = state.nick ? state.nick : "—";
 
-    let { data } = await supabase
-      .from("users")
-      .select("*")
-      .eq("tg_id", tgId)
-      .single();
+      const pill = $("verifyPill");
+      const dot = pill.querySelector(".s-dot");
+      const text = $("verifyText");
 
-    if (!data) {
-      await supabase.from("users").insert({
-        tg_id: tgId,
-        username: user.username,
-        first_name: user.first_name
+      pill.classList.remove("ok");
+      dot.style.background = "var(--bad)";
+      text.textContent = "Не проверен";
+
+      if(state.verify_status === "pending"){
+        text.textContent = "На проверке";
+        dot.style.background = "var(--accent)";
+        dot.style.boxShadow = "0 0 0 4px rgba(245,166,35,.15)";
+      }
+      if(state.verify_status === "verified"){
+        text.textContent = "Проверен";
+        pill.classList.add("ok");
+      }
+      if(state.verify_status === "rejected"){
+        text.textContent = "Отклонён";
+      }
+    }
+
+    function renderMatchmaking(){
+      const gate = $("mmGate");
+      const gateText = $("mmGateText");
+
+      gate.classList.remove("ok");
+      gateText.textContent = "Недоступен";
+      gate.querySelector(".s-dot").style.background = "var(--bad)";
+
+      if(state.verify_status === "verified"){
+        gate.classList.add("ok");
+        gateText.textContent = "Доступен";
+      }
+    }
+
+    function isAdmin(){
+      return state.tg_id && ADMIN_IDS.includes(Number(state.tg_id));
+    }
+
+    function renderAdmin(){
+      const show = isAdmin();
+      $("adminTabBtn").style.display = show ? "" : "none";
+      $("adminBadge").style.display = show ? "inline-flex" : "none";
+      $("adminHint").textContent = show
+        ? `Ты админ. TG ID: ${state.tg_id}`
+        : "Админ-доступа нет.";
+    }
+
+    function switchTab(tab){
+      // buttons
+      document.querySelectorAll(".tabbtn").forEach(b=>{
+        b.classList.toggle("active", b.dataset.tab === tab);
       });
 
-      data = {
-        verify_status: "none"
-      };
+      // views
+      $("view-profile").style.display = (tab==="profile") ? "" : "none";
+      $("view-mm").style.display = (tab==="mm") ? "" : "none";
+      $("view-admin").style.display = (tab==="admin") ? "" : "none";
     }
 
-    updateUI(data);
-  }
-
-  function updateUI(data) {
-    document.getElementById("verifyStatus").innerText = data.verify_status;
-
-    if (data.standoff_id)
-      document.getElementById("standoffId").value = data.standoff_id;
-
-    if (data.standoff_nick)
-      document.getElementById("standoffNick").value = data.standoff_nick;
-  }
-
-  async function saveProfile() {
-    const standoffId = document.getElementById("standoffId").value;
-    const standoffNick = document.getElementById("standoffNick").value;
-
-    await supabase.from("users").update({
-      standoff_id: standoffId,
-      standoff_nick: standoffNick,
-      verify_status: "pending"
-    }).eq("tg_id", tgId);
-
-    alert("Профиль отправлен на проверку");
-    initUser();
-  }
-
-  async function findMatch() {
-    const { data } = await supabase
-      .from("users")
-      .select("verify_status, mmr")
-      .eq("tg_id", tgId)
-      .single();
-
-    if (data.verify_status !== "verified") {
-      document.getElementById("matchStatus").innerText =
-        "Матчмейкинг доступен только после проверки.";
-      return;
-    }
-
-    await supabase.from("queue").upsert({
-      tg_id: tgId,
-      mmr: data.mmr,
-      maps: ["duel"]
+    // =========================
+    // EVENTS
+    // =========================
+    $("tabs").addEventListener("click", (e)=>{
+      const btn = e.target.closest(".tabbtn");
+      if(!btn) return;
+      const tab = btn.dataset.tab;
+      if(tab === "admin" && !isAdmin()) return; // защита
+      switchTab(tab);
     });
 
-    document.getElementById("matchStatus").innerText =
-      "Вы добавлены в очередь.";
-  }
+    $("btnOpenBot").addEventListener("click", ()=>{
+      if(BOT_LINK && BOT_LINK !== "https://t.me/"){
+        window.open(BOT_LINK, "_blank");
+      } else {
+        alert("Вставь ссылку на бота в BOT_LINK в коде.");
+      }
+    });
 
-  initUser();
-</script>
+    $("btnFill").addEventListener("click", ()=>{
+      // Простейшая форма через prompt (вместо неё потом сделаем нормальный экран)
+      const so = prompt("Standoff ID (цифровой):", state.standoff_id || "");
+      if(so === null) return;
+      const nk = prompt("Ник:", state.nick || "");
+      if(nk === null) return;
 
+      state.standoff_id = (so || "").trim();
+      state.nick = (nk || "").trim();
+
+      localStorage.setItem("rz_standoff_id", state.standoff_id);
+      localStorage.setItem("rz_nick", state.nick);
+
+      // если заполнил — автоматически ставим pending (как будто отправил заявку)
+      if(state.standoff_id && state.nick && state.verify_status === "none"){
+        state.verify_status = "pending";
+        localStorage.setItem("rz_verify", state.verify_status);
+      }
+
+      renderProfile();
+      renderMatchmaking();
+      alert("Сохранено. Заявка: " + (state.verify_status === "pending" ? "на проверке" : state.verify_status));
+    });
+
+    $("btnGoVerify").addEventListener("click", ()=>{
+      alert("Проверка проходит через бота: нажми кнопку ✅ Пройти проверку в чате бота.");
+    });
+
+    $("btnFindMatch").addEventListener("click", ()=>{
+      if(state.verify_status !== "verified"){
+        alert("Матчмейкинг недоступен. Сначала пройди проверку.");
+        return;
+      }
+      alert("Поиск матча (MVP). Дальше подключим очередь в базе и подбор.");
+    });
+
+    $("btnAdminRefresh").addEventListener("click", ()=>{
+      // сюда подключим получение заявок из базы/бота
+      alert("Здесь будет загрузка заявок из базы. Подключим следующим шагом.");
+    });
+
+    $("btnAdminPing").addEventListener("click", ()=>{
+      alert(isAdmin() ? "Админ доступ: ОК" : "Ты не админ");
+    });
+
+    // =========================
+    // INIT
+    // =========================
+    // Показываем TG: OK если initData есть
+    $("tgStatus").textContent = tg ? "Telegram: OK" : "Telegram: OFF";
+
+    // если Telegram ID не пришёл — предупреждение
+    if(!state.tg_id){
+      $("tgIdText").textContent = "не получен";
+    }
+
+    renderProfile();
+    renderMatchmaking();
+    renderAdmin();
+
+    // по умолчанию профиль
+    switchTab("profile");
+  </script>
 </body>
 </html>
