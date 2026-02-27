@@ -9,107 +9,89 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(180deg,#0f0f0f,#1a1a1a);color:#fff}
-    .container{padding:16px;max-width:700px;margin:0 auto}
-    .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
-    .brand{display:flex;align-items:center;gap:10px}
-    .logo{width:42px;height:42px;border-radius:50%;background:#111;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,122,0,.35)}
-    .title{font-size:20px;font-weight:800;letter-spacing:.2px}
-    .pill{font-size:12px;padding:6px 10px;border-radius:999px;background:#141414;border:1px solid rgba(255,255,255,.08)}
-    .tabs{display:flex;gap:10px;margin:12px 0 16px}
-    .tab{flex:1;text-align:center;padding:12px;border-radius:14px;background:#151515;border:1px solid rgba(255,255,255,.08);cursor:pointer;font-weight:700}
-    .tab.active{background:rgba(255,122,0,.15);border:1px solid rgba(255,122,0,.35)}
-    .card{background:#151515;padding:16px;border-radius:16px;margin-bottom:14px;border:1px solid rgba(255,255,255,.08)}
-    .row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
-    .muted{opacity:.75}
-    input{width:100%;padding:12px;margin-top:10px;border-radius:12px;border:1px solid rgba(255,255,255,.10);background:#0f0f0f;color:#fff}
-    button{width:100%;padding:12px;border-radius:12px;border:none;font-weight:800;cursor:pointer;margin-top:10px}
-    .primary{background:#ff7a00;color:#0b0b0b}
-    .secondary{background:#2b2b2b;color:#fff}
-    .danger{background:#3a1a1a;color:#fff}
-    .ok{color:#45ff83}
-    .warn{color:#ffb84d}
-    .bad{color:#ff4d4d}
-    .small{font-size:12px}
-    .list{display:flex;flex-direction:column;gap:10px}
-    .item{padding:12px;border-radius:14px;background:#101010;border:1px solid rgba(255,255,255,.08)}
-    .actions{display:flex;gap:10px;margin-top:10px}
-    .actions button{margin-top:0}
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(180deg, #0f0f0f, #1a1a1a);
+      color: white;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #ff7a00;
+    }
+
+    .card {
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 15px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: none;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+
+    .primary {
+      background: #ff7a00;
+      color: black;
+    }
+
+    .secondary {
+      background: #333;
+      color: white;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <div class="top">
-    <div class="brand">
-      <div class="logo">RZ</div>
-      <div>
-        <div class="title">Ranked Zone</div>
-        <div class="muted small">Mini App • Дуэли • Рейтинг</div>
-      </div>
-    </div>
-    <div class="pill" id="tgOk">Telegram: ...</div>
+  <h1>Ranked Zone</h1>
+
+  <div class="card">
+    <div><b>Telegram ID:</b> <span id="tgId">...</span></div>
+    <div><b>Статус:</b> <span id="verifyStatus">загрузка...</span></div>
   </div>
 
-  <div class="tabs">
-    <div class="tab active" id="tabProfile" onclick="showTab('profile')">Профиль</div>
-    <div class="tab" id="tabMM" onclick="showTab('mm')">Матчмейкинг</div>
-    <div class="tab" id="tabAdmin" onclick="showTab('admin')" style="display:none">Админ</div>
+  <div class="card">
+    <input id="standoffId" placeholder="Standoff ID" />
+    <input id="standoffNick" placeholder="Ник" />
+    <button class="primary" onclick="saveProfile()">Сохранить профиль</button>
   </div>
 
-  <!-- PROFILE -->
-  <div id="pageProfile">
-    <div class="card">
-      <div class="row">
-        <div><b>Telegram ID</b><div class="muted" id="tgId">...</div></div>
-        <div><b>Статус</b><div id="verifyStatus" class="warn">загрузка...</div></div>
-      </div>
-      <div class="muted small" style="margin-top:10px" id="hintStatus"></div>
-    </div>
-
-    <div class="card">
-      <b>Данные Standoff 2</b>
-      <input id="standoffId" placeholder="Цифровой Standoff ID" />
-      <input id="standoffNick" placeholder="Ник" />
-      <button class="primary" onclick="saveProfile()">Отправить на проверку</button>
-      <div class="muted small">После отправки статус станет <b>pending</b>. Админ подтвердит вручную.</div>
-    </div>
-  </div>
-
-  <!-- MATCHMAKING -->
-  <div id="pageMM" style="display:none">
-    <div class="card">
-      <b>Матчмейкинг (дуэли)</b>
-      <div class="muted small" style="margin-top:6px">
-        Доступен только после статуса <b>verified</b>. В очередь добавляем на 5 минут.
-      </div>
-      <button class="secondary" onclick="findMatch()">Найти матч</button>
-      <button class="secondary" onclick="leaveQueue()">Выйти из очереди</button>
-      <div id="matchStatus" style="margin-top:10px;font-weight:800"></div>
-    </div>
-  </div>
-
-  <!-- ADMIN -->
-  <div id="pageAdmin" style="display:none">
-    <div class="card">
-      <b>Админ-панель</b>
-      <div class="muted small" style="margin-top:6px">Заявки на проверку (pending)</div>
-      <button class="secondary" onclick="loadPending()">Обновить список</button>
-    </div>
-
-    <div class="card">
-      <div class="list" id="pendingList">
-        <div class="muted">Пока пусто…</div>
-      </div>
-    </div>
+  <div class="card">
+    <button class="secondary" onclick="findMatch()">Найти матч</button>
+    <div class="status" id="matchStatus"></div>
   </div>
 </div>
 
 <script>
   const tg = window.Telegram.WebApp;
   tg.expand();
-
-  const ADMIN_TG_ID = 8001108991; // твой Telegram ID (админ)
 
   const supabase = window.supabase.createClient(
     "https://wbjmvafzgwvspswchghx.supabase.co",
@@ -119,163 +101,77 @@
   const user = tg.initDataUnsafe.user;
   const tgId = user?.id;
 
-  document.getElementById("tgOk").innerText = tgId ? "Telegram: OK" : "Telegram: NO";
   document.getElementById("tgId").innerText = tgId || "не получен";
-
-  if (tgId === ADMIN_TG_ID) {
-    document.getElementById("tabAdmin").style.display = "block";
-  }
-
-  function showTab(name){
-    document.getElementById("tabProfile").classList.remove("active");
-    document.getElementById("tabMM").classList.remove("active");
-    document.getElementById("tabAdmin").classList.remove("active");
-
-    document.getElementById("pageProfile").style.display = "none";
-    document.getElementById("pageMM").style.display = "none";
-    document.getElementById("pageAdmin").style.display = "none";
-
-    if(name==="profile"){ document.getElementById("tabProfile").classList.add("active"); document.getElementById("pageProfile").style.display="block";}
-    if(name==="mm"){ document.getElementById("tabMM").classList.add("active"); document.getElementById("pageMM").style.display="block";}
-    if(name==="admin"){ document.getElementById("tabAdmin").classList.add("active"); document.getElementById("pageAdmin").style.display="block"; loadPending(); }
-  }
 
   async function initUser() {
     if (!tgId) return;
 
-    let { data } = await supabase.from("users").select("*").eq("tg_id", tgId).single();
+    let { data } = await supabase
+      .from("users")
+      .select("*")
+      .eq("tg_id", tgId)
+      .single();
 
     if (!data) {
       await supabase.from("users").insert({
         tg_id: tgId,
-        username: user?.username || null,
-        first_name: user?.first_name || null
+        username: user.username,
+        first_name: user.first_name
       });
-      data = { verify_status: "none" };
+
+      data = {
+        verify_status: "none"
+      };
     }
 
     updateUI(data);
   }
 
-  function statusColor(status){
-    if(status==="verified") return "ok";
-    if(status==="pending") return "warn";
-    if(status==="rejected") return "bad";
-    return "warn";
-  }
-
   function updateUI(data) {
-    const s = data.verify_status || "none";
-    const el = document.getElementById("verifyStatus");
-    el.className = statusColor(s);
-    el.innerText = s;
+    document.getElementById("verifyStatus").innerText = data.verify_status;
 
-    const hint = document.getElementById("hintStatus");
-    if (s === "none") hint.innerText = "Заполни профиль и отправь на проверку.";
-    if (s === "pending") hint.innerText = "Заявка отправлена. Ожидай подтверждения.";
-    if (s === "verified") hint.innerText = "✅ Ты проверен. Матчмейкинг доступен.";
-    if (s === "rejected") hint.innerText = "❌ Отклонено. Проверь данные и отправь снова.";
+    if (data.standoff_id)
+      document.getElementById("standoffId").value = data.standoff_id;
 
-    if (data.standoff_id) document.getElementById("standoffId").value = data.standoff_id;
-    if (data.standoff_nick) document.getElementById("standoffNick").value = data.standoff_nick;
+    if (data.standoff_nick)
+      document.getElementById("standoffNick").value = data.standoff_nick;
   }
 
   async function saveProfile() {
-    const standoffId = document.getElementById("standoffId").value.trim();
-    const standoffNick = document.getElementById("standoffNick").value.trim();
-
-    if (!standoffId || !standoffNick) {
-      tg.showAlert("Заполни Standoff ID и Ник.");
-      return;
-    }
+    const standoffId = document.getElementById("standoffId").value;
+    const standoffNick = document.getElementById("standoffNick").value;
 
     await supabase.from("users").update({
       standoff_id: standoffId,
       standoff_nick: standoffNick,
-      verify_status: "pending",
-      updated_at: new Date().toISOString()
+      verify_status: "pending"
     }).eq("tg_id", tgId);
 
-    tg.showAlert("✅ Отправлено на проверку");
+    alert("Профиль отправлен на проверку");
     initUser();
   }
 
   async function findMatch() {
-    const { data } = await supabase.from("users").select("verify_status, mmr").eq("tg_id", tgId).single();
-    const out = document.getElementById("matchStatus");
+    const { data } = await supabase
+      .from("users")
+      .select("verify_status, mmr")
+      .eq("tg_id", tgId)
+      .single();
 
-    if (!data || data.verify_status !== "verified") {
-      out.className = "bad";
-      out.innerText = "Матчмейкинг доступен только после проверки.";
+    if (data.verify_status !== "verified") {
+      document.getElementById("matchStatus").innerText =
+        "Матчмейкинг доступен только после проверки.";
       return;
     }
 
-    // ставим в очередь на 5 минут (сбрасываем created_at обновлением)
     await supabase.from("queue").upsert({
       tg_id: tgId,
-      mmr: data.mmr || 1000,
-      maps: ["duel"],
-      created_at: new Date().toISOString()
+      mmr: data.mmr,
+      maps: ["duel"]
     });
 
-    out.className = "ok";
-    out.innerText = "✅ Вы добавлены в очередь (5 минут).";
-  }
-
-  async function leaveQueue(){
-    const out = document.getElementById("matchStatus");
-    await supabase.from("queue").delete().eq("tg_id", tgId);
-    out.className = "warn";
-    out.innerText = "Вы вышли из очереди.";
-  }
-
-  // ADMIN
-  async function loadPending(){
-    if (tgId !== ADMIN_TG_ID) return;
-    const list = document.getElementById("pendingList");
-    list.innerHTML = "<div class='muted'>Загрузка…</div>";
-
-    const { data, error } = await supabase
-      .from("users")
-      .select("tg_id, username, first_name, standoff_id, standoff_nick, updated_at")
-      .eq("verify_status", "pending")
-      .order("updated_at", { ascending: false });
-
-    if (error) {
-      list.innerHTML = "<div class='bad'>Ошибка загрузки</div>";
-      return;
-    }
-
-    if (!data || data.length === 0) {
-      list.innerHTML = "<div class='muted'>Пока нет заявок 🟢</div>";
-      return;
-    }
-
-    list.innerHTML = "";
-    data.forEach(u => {
-      const div = document.createElement("div");
-      div.className = "item";
-      div.innerHTML = `
-        <div><b>${u.standoff_nick || "—"}</b> <span class="muted small">(${u.standoff_id || "—"})</span></div>
-        <div class="muted small">tg: ${u.tg_id} • @${u.username || "—"} • ${u.first_name || ""}</div>
-        <div class="actions">
-          <button class="primary" onclick="setVerified(${u.tg_id}, true)">✅ Подтвердить</button>
-          <button class="danger" onclick="setVerified(${u.tg_id}, false)">❌ Отклонить</button>
-        </div>
-      `;
-      list.appendChild(div);
-    });
-  }
-
-  async function setVerified(targetTgId, ok){
-    if (tgId !== ADMIN_TG_ID) return;
-
-    await supabase.from("users").update({
-      verify_status: ok ? "verified" : "rejected",
-      updated_at: new Date().toISOString()
-    }).eq("tg_id", targetTgId);
-
-    loadPending();
+    document.getElementById("matchStatus").innerText =
+      "Вы добавлены в очередь.";
   }
 
   initUser();
