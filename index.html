@@ -13,6 +13,7 @@
 
   <style>
     :root{
+      /* Под аву: тёмный графит + оранжевый акцент */
       --bg0:#070A10;
       --bg1:#0B1220;
       --card:#0E1A2B;
@@ -22,8 +23,8 @@
       --muted:rgba(234,242,255,.65);
       --muted2:rgba(234,242,255,.45);
 
-      --accent:#F5A623;
-      --accent2:#FF7A18;
+      --accent:#F5A623;        /* оранжевый */
+      --accent2:#FF7A18;       /* оранжево-красный */
       --good:#2EE59D;
       --bad:#FF4D4D;
 
@@ -33,6 +34,7 @@
     }
 
     *{box-sizing:border-box}
+    html, body { height: 100%; }
     body{
       margin:0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -44,6 +46,8 @@
         linear-gradient(180deg, var(--bg0), var(--bg1));
       min-height:100vh;
       padding: 18px 16px 24px;
+      /* чтобы точно не было "как фото" из-за перекрытий */
+      touch-action: manipulation;
     }
 
     .wrap{ max-width: 820px; margin: 0 auto; }
@@ -67,6 +71,7 @@
       box-shadow: 0 16px 40px rgba(0,0,0,.45);
       font-weight:900;
       letter-spacing:.5px;
+      user-select:none;
     }
 
     .titleblock{ flex:1; min-width:0; }
@@ -91,6 +96,7 @@
       color:var(--muted);
       font-size: 13px;
       white-space:nowrap;
+      user-select:none;
     }
     .dot{
       width:8px;height:8px;border-radius:50%;
@@ -157,6 +163,7 @@
       font-weight: 800;
       color:var(--muted);
       white-space:nowrap;
+      user-select:none;
     }
     .status .s-dot{
       width:8px;height:8px;border-radius:50%;
@@ -208,6 +215,10 @@
       transition:.15s ease;
       user-select:none;
       text-align:center;
+
+      /* критично для мобильного (когда кажется, что “ничего не тыкается”) */
+      pointer-events: auto;
+      -webkit-tap-highlight-color: transparent;
     }
     .btn:hover{ transform: translateY(-1px); }
     .btn.primary{
@@ -232,6 +243,7 @@
       color: var(--muted);
       font-size: 13px;
       line-height: 1.35;
+      word-break: break-word;
     }
 
     .adminBadge{
@@ -244,6 +256,7 @@
       padding: 6px 10px;
       border-radius: 999px;
       vertical-align: middle;
+      user-select:none;
     }
 
     .adminBox{
@@ -276,19 +289,24 @@
     .reqBtns{ display:flex; gap:10px; margin-top: 10px; flex-wrap:wrap; }
     .reqBtns .btn{ min-width: 0; flex:1; }
 
-    /* DEBUG PANEL */
-    #dbg{
-      position:fixed;
-      left:10px; right:10px; bottom:10px;
-      background:#111; color:#fff;
-      padding:10px;
-      border-radius:12px;
-      font:12px/1.35 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      z-index:999999;
-      opacity:.95;
-      border:1px solid rgba(255,255,255,.12);
-      pointer-events:none;
-      white-space:pre-wrap;
+    /* Debug bar */
+    .dbg{
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: 10px;
+      z-index: 9999;
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(0,0,0,.55);
+      border: 1px solid rgba(255,255,255,.10);
+      color: rgba(255,255,255,.85);
+      font-size: 12px;
+      backdrop-filter: blur(8px);
+      pointer-events: none; /* чтобы НЕ мешало кликам */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     @media (max-width:520px){
@@ -297,11 +315,8 @@
     }
   </style>
 </head>
+
 <body>
-
-  <!-- DEBUG -->
-  <div id="dbg">DBG: loading...</div>
-
   <div class="wrap">
     <div class="top">
       <div class="logo">RZ</div>
@@ -421,44 +436,47 @@
     </div>
   </div>
 
+  <div id="dbg" class="dbg">DBG: boot…</div>
+
   <script>
-    // ======= STEP 1: JS живой =======
-    alert("JS живой ✅");
-
-    // ======= DEBUG HELPERS =======
-    const dbgEl = document.getElementById("dbg");
-    const dbg = (m)=>{ if(dbgEl) dbgEl.textContent = "DBG: " + m; console.log(m); };
-
-    window.addEventListener("error", (e)=>{
-      dbg("JS ERROR: " + (e.message || "unknown"));
-    });
-    window.addEventListener("unhandledrejection", (e)=>{
-      dbg("PROMISE ERROR: " + (e.reason?.message || e.reason || "unknown"));
-    });
-
-    document.addEventListener("DOMContentLoaded", ()=>{
-      dbg("DOM loaded ✅");
-    });
-
     // =========================
-    // SUPABASE CONFIG (ТУТ ПОМЕНЯЙ КЛЮЧ!)
+    // CONFIG (вставлено тобой)
     // =========================
     const SUPABASE_URL = "https://wbjmvafzgwvspswchghx.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_IkbenyjJMOsjztywoz0KXg_WJ3lHKqm";
 
-    // ⚠️ НУЖЕН anon public key вида: eyJhbGciOiJIUzI1NiIsInR...
-    // Supabase Dashboard → Settings → API → Project API keys → anon public
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indiam12YWZ6Z3d2c3Bzd2NoZ2h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxMzA0NjcsImV4cCI6MjA4NzcwNjQ2N30.ax-_pe4r7PUZxDaZeW6z7tMuHtgsOhAxPx1_XqQW6X8 ";
+    // BOT LINK (у тебя @rankedzone_off_bot)
+    const BOT_LINK = "https://t.me/rankedzone_off_bot";
 
-    if(!window.supabase?.createClient){
-      dbg("Supabase lib не загрузилась ❌");
+    // ADMINS
+    const ADMIN_TG_IDS = [8001108991];
+
+    // =========================
+    // DEBUG
+    // =========================
+    const dbgEl = document.getElementById("dbg");
+    function dbg(msg){
+      dbgEl.textContent = "DBG: " + msg;
+      console.log("[DBG]", msg);
+    }
+    function dbgErr(prefix, e){
+      const msg = (e && (e.message || e.error_description || e.toString())) ? (e.message || e.error_description || e.toString()) : String(e);
+      dbg(prefix + " ❌ " + msg);
+      console.error(prefix, e);
     }
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // =========================
+    // SAFETY: supabase lib loaded?
+    // =========================
+    if(!window.supabase?.createClient){
+      dbg("Supabase lib не загрузилась ❌ (cdn.jsdelivr?)");
+    } else {
+      dbg("Supabase lib OK");
+    }
 
-    // =========================
-    // BOT LINK (вставь юзернейм бота)
-    // =========================
-    const BOT_LINK = "https://t.me/"; // например: "https://t.me/RankedZoneBot"
+    const supabase = window.supabase?.createClient
+      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      : null;
 
     // =========================
     // TELEGRAM INIT
@@ -475,7 +493,7 @@
     const tgId = tgUser?.id || null;
 
     // =========================
-    // STATE (истина = база)
+    // STATE
     // =========================
     const state = {
       tg_id: tgId,
@@ -484,8 +502,8 @@
 
       standoff_id: "",
       nick: "",
-      verify_status: "none",
-      role: "user"
+      verify_status: "none", // none/pending/verified/rejected
+      role: "user"           // user/admin
     };
 
     // =========================
@@ -535,20 +553,29 @@
       }
     }
 
-    function isAdmin(){ return state.role === "admin"; }
+    function isAdmin(){
+      // роль из базы ИЛИ жесткий список (на случай, если база пустая)
+      if(state.tg_id && ADMIN_TG_IDS.includes(Number(state.tg_id))) return true;
+      return state.role === "admin";
+    }
 
     function renderAdmin(){
       const show = isAdmin();
       $("adminTabBtn").style.display = show ? "" : "none";
       $("adminBadge").style.display = show ? "inline-flex" : "none";
-      $("adminHint").textContent = show ? `Ты админ. TG ID: ${state.tg_id}` : "Админ-доступа нет.";
-      if(!show) $("adminList").innerHTML = "";
+      $("adminHint").textContent = show
+        ? `Ты админ. TG ID: ${state.tg_id}`
+        : "Админ-доступа нет.";
+      if(!show){
+        $("adminList").innerHTML = "";
+      }
     }
 
     function switchTab(tab){
       document.querySelectorAll(".tabbtn").forEach(b=>{
         b.classList.toggle("active", b.dataset.tab === tab);
       });
+
       $("view-profile").style.display = (tab==="profile") ? "" : "none";
       $("view-mm").style.display = (tab==="mm") ? "" : "none";
       $("view-admin").style.display = (tab==="admin") ? "" : "none";
@@ -558,99 +585,301 @@
     // DB FUNCTIONS
     // =========================
     async function ensureUserRow(){
+      if(!supabase) return;
       if(!state.tg_id) return;
 
-      dbg("ensureUserRow...");
+      // ВАЖНО: upsert не должен затирать существующий профиль.
+      // Но мы тут задаём verify_status/role дефолтом только при создании.
+      // Для этого используем upsert + "ignoreDuplicates" не работает в JS,
+      // поэтому делаем: сначала select, если нет — insert.
+      try {
+        const { data: existing, error: selErr } = await supabase
+          .from("users")
+          .select("tg_id")
+          .eq("tg_id", Number(state.tg_id))
+          .maybeSingle();
 
-      const payload = {
-        tg_id: Number(state.tg_id),
-        username: state.username,
-        first_name: state.first_name,
-        verify_status: "none",
-        role: "user"
-      };
+        if(selErr){
+          dbg("ensureUserRow select error: " + selErr.message);
+          return;
+        }
 
-      const { error } = await supabase
-        .from("users")
-        .upsert(payload, { onConflict: "tg_id" });
+        if(existing?.tg_id){
+          // просто обновим username/first_name (без профиля)
+          const { error: upErr } = await supabase
+            .from("users")
+            .update({
+              username: state.username,
+              first_name: state.first_name
+            })
+            .eq("tg_id", Number(state.tg_id));
 
-      if(error){
-        dbg("ensureUserRow error: " + error.message);
-        $("profileHint").textContent = "Ошибка базы: " + error.message;
-      } else {
-        dbg("ensureUserRow OK ✅");
+          if(upErr){
+            dbg("ensureUserRow update error: " + upErr.message);
+          } else {
+            dbg("ensureUserRow: updated");
+          }
+          return;
+        }
+
+        // вставка новой строки
+        const payload = {
+          tg_id: Number(state.tg_id),
+          username: state.username,
+          first_name: state.first_name,
+          standoff_id: null,
+          standoff_nick: null,
+          verify_status: "none",
+          role: (ADMIN_TG_IDS.includes(Number(state.tg_id)) ? "admin" : "user")
+        };
+
+        const { error: insErr } = await supabase
+          .from("users")
+          .insert(payload);
+
+        if(insErr){
+          dbg("ensureUserRow insert error: " + insErr.message);
+        } else {
+          dbg("ensureUserRow: inserted");
+        }
+      } catch(e){
+        dbgErr("ensureUserRow", e);
       }
     }
 
     async function loadMeFromDB(){
+      if(!supabase) return;
       if(!state.tg_id) return;
 
-      dbg("loadMeFromDB...");
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("tg_id, username, first_name, standoff_id, standoff_nick, verify_status, role")
+          .eq("tg_id", Number(state.tg_id))
+          .maybeSingle();
 
-      const { data, error } = await supabase
-        .from("users")
-        .select("tg_id, username, first_name, standoff_id, standoff_nick, verify_status, role")
-        .eq("tg_id", Number(state.tg_id))
-        .maybeSingle();
+        if(error){
+          dbg("loadMeFromDB error: " + error.message);
+          $("profileHint").textContent = "Ошибка загрузки из базы: " + error.message;
+          return;
+        }
 
-      if(error){
-        dbg("loadMeFromDB error: " + error.message);
-        $("profileHint").textContent = "Ошибка загрузки из базы: " + error.message;
+        if(data){
+          state.standoff_id = data.standoff_id || "";
+          state.nick = data.standoff_nick || "";
+          state.verify_status = data.verify_status || "none";
+          state.role = data.role || (ADMIN_TG_IDS.includes(Number(state.tg_id)) ? "admin" : "user");
+        } else {
+          dbg("loadMeFromDB: row not found (создадим)");
+        }
+
+        renderProfile();
+        renderMatchmaking();
+        renderAdmin();
+        $("profileHint").textContent = "Профиль загружен из Supabase ✅";
+        dbg("loadMeFromDB OK");
+      } catch(e){
+        dbgErr("loadMeFromDB", e);
+      }
+    }
+
+    async function saveProfileToDB(soId, nick){
+      if(!supabase) return { ok:false, msg:"Supabase не загрузился" };
+      if(!state.tg_id) return { ok:false, msg:"Telegram ID не получен" };
+
+      try {
+        const nextStatus = (state.verify_status === "none" ? "pending" : state.verify_status);
+
+        const { error } = await supabase
+          .from("users")
+          .update({
+            standoff_id: soId,
+            standoff_nick: nick,
+            verify_status: nextStatus
+          })
+          .eq("tg_id", Number(state.tg_id));
+
+        if(error) return { ok:false, msg:error.message };
+
+        state.standoff_id = soId;
+        state.nick = nick;
+        state.verify_status = nextStatus;
+
+        return { ok:true };
+      } catch(e){
+        return { ok:false, msg:(e?.message || String(e)) };
+      }
+    }
+
+    async function loadPendingRequests(){
+      if(!supabase) return;
+      if(!isAdmin()){
+        $("adminList").innerHTML = "";
         return;
       }
 
-      if(data){
-        state.standoff_id = data.standoff_id || "";
-        state.nick = data.standoff_nick || "";
-        state.verify_status = data.verify_status || "none";
-        state.role = data.role || "user";
+      $("adminList").innerHTML = `<div class="hint">Загружаю заявки...</div>`;
+
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("tg_id, username, first_name, standoff_id, standoff_nick, verify_status, created_at")
+          .eq("verify_status", "pending")
+          .order("created_at", { ascending: false })
+          .limit(50);
+
+        if(error){
+          $("adminList").innerHTML = `<div class="hint">Ошибка загрузки заявок: ${error.message}</div>`;
+          dbg("loadPendingRequests error: " + error.message);
+          return;
+        }
+
+        if(!data || data.length === 0){
+          $("adminList").innerHTML = `<div class="hint">Пока нет заявок 🟢</div>`;
+          dbg("pending: 0");
+          return;
+        }
+
+        const html = data.map(u => {
+          const name = (u.standoff_nick || u.username || u.first_name || "без имени");
+          const so = u.standoff_id ? `Standoff ID: <b>${u.standoff_id}</b>` : "Standoff ID: —";
+          return `
+            <div class="req" data-tgid="${u.tg_id}">
+              <div class="reqTop">
+                <div>
+                  <div class="reqTitle">${name}</div>
+                  <div class="reqMeta">TG: ${u.tg_id} • ${so}</div>
+                </div>
+                <div class="pill"><span class="dot"></span><span>pending</span></div>
+              </div>
+              <div class="reqBtns">
+                <div class="btn orange" data-act="approve">✅ Подтвердить</div>
+                <div class="btn red" data-act="reject">❌ Отклонить</div>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        $("adminList").innerHTML = html;
+        dbg("pending loaded: " + data.length);
+      } catch(e){
+        dbgErr("loadPendingRequests", e);
+      }
+    }
+
+    async function setVerifyStatus(targetTgId, status){
+      if(!supabase) return;
+      if(!isAdmin()) return;
+
+      try {
+        const { error } = await supabase
+          .from("users")
+          .update({ verify_status: status })
+          .eq("tg_id", Number(targetTgId));
+
+        if(error){
+          alert("Ошибка: " + error.message);
+          dbg("setVerifyStatus error: " + error.message);
+          return;
+        }
+
+        if(Number(targetTgId) === Number(state.tg_id)){
+          state.verify_status = status;
+          renderProfile();
+          renderMatchmaking();
+        }
+
+        await loadPendingRequests();
+      } catch(e){
+        dbgErr("setVerifyStatus", e);
+      }
+    }
+
+    // =========================
+    // EVENTS (важно: используем pointerup для мобилки)
+    // =========================
+    function onTap(el, fn){
+      el.addEventListener("pointerup", (e)=>{
+        e.preventDefault();
+        fn(e);
+      }, { passive:false });
+    }
+
+    // Табы
+    $("tabs").addEventListener("pointerup", (e)=>{
+      const btn = e.target.closest(".tabbtn");
+      if(!btn) return;
+      e.preventDefault();
+      const tab = btn.dataset.tab;
+      if(tab === "admin" && !isAdmin()) return;
+      switchTab(tab);
+    }, { passive:false });
+
+    // Кнопки
+    onTap($("btnOpenBot"), ()=>{
+      window.open(BOT_LINK, "_blank");
+    });
+
+    onTap($("btnFill"), async ()=>{
+      const so = prompt("Standoff ID (цифровой):", state.standoff_id || "");
+      if(so === null) return;
+      const nk = prompt("Ник:", state.nick || "");
+      if(nk === null) return;
+
+      const soId = (so || "").trim();
+      const nick = (nk || "").trim();
+
+      if(!soId || !nick){
+        alert("Нужно заполнить и Standoff ID, и Ник.");
+        return;
+      }
+
+      const res = await saveProfileToDB(soId, nick);
+      if(!res.ok){
+        alert("Не сохранилось в базу: " + res.msg);
+        return;
       }
 
       renderProfile();
       renderMatchmaking();
-      renderAdmin();
-      $("profileHint").textContent = "Профиль загружен из Supabase ✅";
-      dbg("loadMeFromDB OK ✅");
-    }
-
-    // =========================
-    // EVENTS
-    // =========================
-    $("tabs").addEventListener("click", (e)=>{
-      const btn = e.target.closest(".tabbtn");
-      if(!btn) return;
-      const tab = btn.dataset.tab;
-      if(tab === "admin" && !isAdmin()) return;
-      switchTab(tab);
+      alert("Сохранено ✅ Заявка: " + (state.verify_status === "pending" ? "на проверке" : state.verify_status));
     });
 
-    $("btnOpenBot").addEventListener("click", ()=>{
-      if(BOT_LINK && BOT_LINK !== "https://t.me/"){
-        window.open(BOT_LINK, "_blank");
-      } else {
-        alert("Вставь ссылку на бота в BOT_LINK в коде.");
+    onTap($("btnGoVerify"), ()=>{
+      alert("Проверка проходит через бота: нажми ✅ Пройти проверку в чате бота.");
+    });
+
+    onTap($("btnFindMatch"), ()=>{
+      if(state.verify_status !== "verified"){
+        alert("Матчмейкинг недоступен. Сначала пройди проверку.");
+        return;
       }
+      alert("Поиск матча (MVP). Дальше подключим очередь в базе и подбор.");
     });
 
-    $("btnFill").addEventListener("click", ()=>{
-      alert("Кнопка живая ✅ (потом вернем сохранение)");
+    onTap($("btnAdminRefresh"), async ()=>{
+      await loadPendingRequests();
     });
 
-    $("btnGoVerify").addEventListener("click", ()=>{
-      alert("Кнопка живая ✅");
-    });
-
-    $("btnFindMatch").addEventListener("click", ()=>{
-      alert("Кнопка живая ✅");
-    });
-
-    $("btnAdminRefresh").addEventListener("click", ()=>{
-      alert("Кнопка живая ✅");
-    });
-
-    $("btnAdminPing").addEventListener("click", ()=>{
+    onTap($("btnAdminPing"), ()=>{
       alert(isAdmin() ? "Админ доступ: ОК" : "Ты не админ");
     });
+
+    // клики по заявкам
+    $("adminList").addEventListener("pointerup", async (e)=>{
+      const actBtn = e.target.closest("[data-act]");
+      if(!actBtn) return;
+      e.preventDefault();
+
+      const req = e.target.closest(".req");
+      if(!req) return;
+
+      const target = req.getAttribute("data-tgid");
+      const act = actBtn.getAttribute("data-act");
+
+      if(act === "approve") await setVerifyStatus(target, "verified");
+      if(act === "reject") await setVerifyStatus(target, "rejected");
+    }, { passive:false });
 
     // =========================
     // INIT
@@ -659,8 +888,11 @@
 
     if(!state.tg_id){
       $("tgIdText").textContent = "не получен";
-      $("profileHint").textContent = "Telegram ID не пришёл. Открой мини-апп из бота.";
-      dbg("TG ID = null (не WebApp режим?)");
+      $("profileHint").textContent =
+        "Telegram ID не пришёл. Это нормально в браузере. Открой мини-апп ИМЕННО из Telegram (из бота).";
+      dbg("Нет tg_id (открыто не из Telegram)");
+    } else {
+      dbg("tg_id=" + state.tg_id);
     }
 
     renderProfile();
@@ -669,8 +901,18 @@
     switchTab("profile");
 
     (async ()=>{
+      if(!supabase){
+        $("profileHint").textContent = "Supabase не загрузился (CDN). Попробуй обновить страницу.";
+        return;
+      }
+
       await ensureUserRow();
       await loadMeFromDB();
+      if(isAdmin()){
+        await loadPendingRequests();
+      }
+
+      dbg("ready ✅");
     })();
   </script>
 </body>
