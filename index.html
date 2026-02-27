@@ -276,6 +276,21 @@
     .reqBtns{ display:flex; gap:10px; margin-top: 10px; flex-wrap:wrap; }
     .reqBtns .btn{ min-width: 0; flex:1; }
 
+    /* DEBUG PANEL */
+    #dbg{
+      position:fixed;
+      left:10px; right:10px; bottom:10px;
+      background:#111; color:#fff;
+      padding:10px;
+      border-radius:12px;
+      font:12px/1.35 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      z-index:999999;
+      opacity:.95;
+      border:1px solid rgba(255,255,255,.12);
+      pointer-events:none;
+      white-space:pre-wrap;
+    }
+
     @media (max-width:520px){
       .grid2{ grid-template-columns: 1fr; }
       .btn{ min-width: 0; }
@@ -283,6 +298,10 @@
   </style>
 </head>
 <body>
+
+  <!-- DEBUG -->
+  <div id="dbg">DBG: loading...</div>
+
   <div class="wrap">
     <div class="top">
       <div class="logo">RZ</div>
@@ -403,11 +422,37 @@
   </div>
 
   <script>
+    // ======= STEP 1: JS живой =======
+    alert("JS живой ✅");
+
+    // ======= DEBUG HELPERS =======
+    const dbgEl = document.getElementById("dbg");
+    const dbg = (m)=>{ if(dbgEl) dbgEl.textContent = "DBG: " + m; console.log(m); };
+
+    window.addEventListener("error", (e)=>{
+      dbg("JS ERROR: " + (e.message || "unknown"));
+    });
+    window.addEventListener("unhandledrejection", (e)=>{
+      dbg("PROMISE ERROR: " + (e.reason?.message || e.reason || "unknown"));
+    });
+
+    document.addEventListener("DOMContentLoaded", ()=>{
+      dbg("DOM loaded ✅");
+    });
+
     // =========================
-    // SUPABASE CONFIG (твои)
+    // SUPABASE CONFIG (ТУТ ПОМЕНЯЙ КЛЮЧ!)
     // =========================
     const SUPABASE_URL = "https://wbjmvafzgwvspswchghx.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_IkbenyjJMOsjztywoz0KXg_WJ3lHKqm";
+
+    // ⚠️ НУЖЕН anon public key вида: eyJhbGciOiJIUzI1NiIsInR...
+    // Supabase Dashboard → Settings → API → Project API keys → anon public
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indiam12YWZ6Z3d2c3Bzd2NoZ2h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxMzA0NjcsImV4cCI6MjA4NzcwNjQ2N30.ax-_pe4r7PUZxDaZeW6z7tMuHtgsOhAxPx1_XqQW6X8 ";
+
+    if(!window.supabase?.createClient){
+      dbg("Supabase lib не загрузилась ❌");
+    }
+
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // =========================
@@ -439,8 +484,8 @@
 
       standoff_id: "",
       nick: "",
-      verify_status: "none", // none/pending/verified/rejected
-      role: "user"           // user/admin
+      verify_status: "none",
+      role: "user"
     };
 
     // =========================
@@ -490,27 +535,20 @@
       }
     }
 
-    function isAdmin(){
-      return state.role === "admin";
-    }
+    function isAdmin(){ return state.role === "admin"; }
 
     function renderAdmin(){
       const show = isAdmin();
       $("adminTabBtn").style.display = show ? "" : "none";
       $("adminBadge").style.display = show ? "inline-flex" : "none";
-      $("adminHint").textContent = show
-        ? `Ты админ. TG ID: ${state.tg_id}`
-        : "Админ-доступа нет.";
-      if(!show){
-        $("adminList").innerHTML = "";
-      }
+      $("adminHint").textContent = show ? `Ты админ. TG ID: ${state.tg_id}` : "Админ-доступа нет.";
+      if(!show) $("adminList").innerHTML = "";
     }
 
     function switchTab(tab){
       document.querySelectorAll(".tabbtn").forEach(b=>{
         b.classList.toggle("active", b.dataset.tab === tab);
       });
-
       $("view-profile").style.display = (tab==="profile") ? "" : "none";
       $("view-mm").style.display = (tab==="mm") ? "" : "none";
       $("view-admin").style.display = (tab==="admin") ? "" : "none";
@@ -522,12 +560,12 @@
     async function ensureUserRow(){
       if(!state.tg_id) return;
 
-      // создаём/обновляем запись
+      dbg("ensureUserRow...");
+
       const payload = {
         tg_id: Number(state.tg_id),
         username: state.username,
         first_name: state.first_name,
-        // не затираем поля профиля, если они уже есть — upsert их сохранит
         verify_status: "none",
         role: "user"
       };
@@ -537,13 +575,17 @@
         .upsert(payload, { onConflict: "tg_id" });
 
       if(error){
-        console.log("ensureUserRow error:", error);
+        dbg("ensureUserRow error: " + error.message);
         $("profileHint").textContent = "Ошибка базы: " + error.message;
+      } else {
+        dbg("ensureUserRow OK ✅");
       }
     }
 
     async function loadMeFromDB(){
       if(!state.tg_id) return;
+
+      dbg("loadMeFromDB...");
 
       const { data, error } = await supabase
         .from("users")
@@ -552,7 +594,7 @@
         .maybeSingle();
 
       if(error){
-        console.log("loadMeFromDB error:", error);
+        dbg("loadMeFromDB error: " + error.message);
         $("profileHint").textContent = "Ошибка загрузки из базы: " + error.message;
         return;
       }
@@ -567,102 +609,8 @@
       renderProfile();
       renderMatchmaking();
       renderAdmin();
-
       $("profileHint").textContent = "Профиль загружен из Supabase ✅";
-    }
-
-    async function saveProfileToDB(soId, nick){
-      if(!state.tg_id) return { ok:false, msg:"Telegram ID не получен" };
-
-      const { error } = await supabase
-        .from("users")
-        .update({
-          standoff_id: soId,
-          standoff_nick: nick,
-          // если впервые заполнил — ставим pending
-          verify_status: (state.verify_status === "none" ? "pending" : state.verify_status)
-        })
-        .eq("tg_id", Number(state.tg_id));
-
-      if(error) return { ok:false, msg:error.message };
-
-      // обновляем локальный стейт
-      state.standoff_id = soId;
-      state.nick = nick;
-      if(state.verify_status === "none") state.verify_status = "pending";
-
-      return { ok:true };
-    }
-
-    async function loadPendingRequests(){
-      if(!isAdmin()){
-        $("adminList").innerHTML = "";
-        return;
-      }
-
-      $("adminList").innerHTML = `<div class="hint">Загружаю заявки...</div>`;
-
-      const { data, error } = await supabase
-        .from("users")
-        .select("tg_id, username, first_name, standoff_id, standoff_nick, verify_status, created_at")
-        .eq("verify_status", "pending")
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      if(error){
-        $("adminList").innerHTML = `<div class="hint">Ошибка загрузки заявок: ${error.message}</div>`;
-        return;
-      }
-
-      if(!data || data.length === 0){
-        $("adminList").innerHTML = `<div class="hint">Пока нет заявок 🟢</div>`;
-        return;
-      }
-
-      const html = data.map(u => {
-        const name = (u.standoff_nick || u.username || u.first_name || "без имени");
-        const so = u.standoff_id ? `Standoff ID: <b>${u.standoff_id}</b>` : "Standoff ID: —";
-        return `
-          <div class="req" data-tgid="${u.tg_id}">
-            <div class="reqTop">
-              <div>
-                <div class="reqTitle">${name}</div>
-                <div class="reqMeta">TG: ${u.tg_id} • ${so}</div>
-              </div>
-              <div class="pill"><span class="dot"></span><span>pending</span></div>
-            </div>
-            <div class="reqBtns">
-              <div class="btn orange" data-act="approve">✅ Подтвердить</div>
-              <div class="btn red" data-act="reject">❌ Отклонить</div>
-            </div>
-          </div>
-        `;
-      }).join("");
-
-      $("adminList").innerHTML = html;
-    }
-
-    async function setVerifyStatus(targetTgId, status){
-      if(!isAdmin()) return;
-
-      const { error } = await supabase
-        .from("users")
-        .update({ verify_status: status })
-        .eq("tg_id", Number(targetTgId));
-
-      if(error){
-        alert("Ошибка: " + error.message);
-        return;
-      }
-
-      // если поменяли себя — сразу обновим свой стейт
-      if(Number(targetTgId) === Number(state.tg_id)){
-        state.verify_status = status;
-        renderProfile();
-        renderMatchmaking();
-      }
-
-      await loadPendingRequests();
+      dbg("loadMeFromDB OK ✅");
     }
 
     // =========================
@@ -684,67 +632,24 @@
       }
     });
 
-    $("btnFill").addEventListener("click", async ()=>{
-      const so = prompt("Standoff ID (цифровой):", state.standoff_id || "");
-      if(so === null) return;
-      const nk = prompt("Ник:", state.nick || "");
-      if(nk === null) return;
-
-      const soId = (so || "").trim();
-      const nick = (nk || "").trim();
-
-      if(!soId || !nick){
-        alert("Нужно заполнить и Standoff ID, и Ник.");
-        return;
-      }
-
-      const res = await saveProfileToDB(soId, nick);
-      if(!res.ok){
-        alert("Не сохранилось в базу: " + res.msg);
-        return;
-      }
-
-      renderProfile();
-      renderMatchmaking();
-      alert("Сохранено ✅ Заявка: " + (state.verify_status === "pending" ? "на проверке" : state.verify_status));
+    $("btnFill").addEventListener("click", ()=>{
+      alert("Кнопка живая ✅ (потом вернем сохранение)");
     });
 
     $("btnGoVerify").addEventListener("click", ()=>{
-      alert("Проверка проходит через бота: нажми ✅ Пройти проверку в чате бота.");
+      alert("Кнопка живая ✅");
     });
 
     $("btnFindMatch").addEventListener("click", ()=>{
-      if(state.verify_status !== "verified"){
-        alert("Матчмейкинг недоступен. Сначала пройди проверку.");
-        return;
-      }
-      alert("Поиск матча (MVP). Дальше подключим очередь в базе и подбор.");
+      alert("Кнопка живая ✅");
     });
 
-    $("btnAdminRefresh").addEventListener("click", async ()=>{
-      await loadPendingRequests();
+    $("btnAdminRefresh").addEventListener("click", ()=>{
+      alert("Кнопка живая ✅");
     });
 
     $("btnAdminPing").addEventListener("click", ()=>{
       alert(isAdmin() ? "Админ доступ: ОК" : "Ты не админ");
-    });
-
-    // клики по заявкам
-    $("adminList").addEventListener("click", async (e)=>{
-      const actBtn = e.target.closest("[data-act]");
-      if(!actBtn) return;
-      const req = e.target.closest(".req");
-      if(!req) return;
-
-      const target = req.getAttribute("data-tgid");
-      const act = actBtn.getAttribute("data-act");
-
-      if(act === "approve"){
-        await setVerifyStatus(target, "verified");
-      }
-      if(act === "reject"){
-        await setVerifyStatus(target, "rejected");
-      }
     });
 
     // =========================
@@ -755,17 +660,18 @@
     if(!state.tg_id){
       $("tgIdText").textContent = "не получен";
       $("profileHint").textContent = "Telegram ID не пришёл. Открой мини-апп из бота.";
+      dbg("TG ID = null (не WebApp режим?)");
     }
 
+    renderProfile();
+    renderMatchmaking();
+    renderAdmin();
+    switchTab("profile");
+
     (async ()=>{
-      await ensureUserRow();     // создаёт/обновляет строку
-      await loadMeFromDB();      // тянет роль/статус/профиль
-      // если админ — сразу грузим pending
-      if(isAdmin()){
-        await loadPendingRequests();
-      }
-      switchTab("profile");
+      await ensureUserRow();
+      await loadMeFromDB();
     })();
   </script>
 </body>
-</html> 
+</html>
