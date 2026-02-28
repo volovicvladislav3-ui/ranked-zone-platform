@@ -1,51 +1,118 @@
 <!doctype html>
-<html>
+<html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Telegram Test</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    body{
-      margin:0;
-      background:#111;
-      color:#fff;
-      font-family:Arial;
-      padding:20px;
-    }
-    .box{
-      background:#1e1e1e;
-      padding:15px;
-      border-radius:12px;
-      margin-bottom:15px;
-      word-break:break-word;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ranked Zone</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+  margin:0;
+  background:#0f1115;
+  color:white;
+  font-family:Arial;
+  padding:20px;
+}
+.card{
+  background:#1b1f27;
+  padding:20px;
+  border-radius:16px;
+  margin-bottom:15px;
+}
+.btn{
+  padding:12px;
+  border-radius:12px;
+  background:#f5a623;
+  color:black;
+  font-weight:bold;
+  text-align:center;
+  margin-top:10px;
+}
+.status{
+  margin-top:10px;
+  font-size:14px;
+  opacity:.7;
+}
+</style>
 </head>
 <body>
 
-<h2>Telegram WebApp Debug</h2>
+<h2>Ranked Zone</h2>
 
-<div class="box" id="tgExists"></div>
-<div class="box" id="initLen"></div>
-<div class="box" id="userId"></div>
-<div class="box" id="rawData"></div>
+<div class="card">
+  <div><b>Telegram ID:</b> <span id="tgid">...</span></div>
+  <div><b>Verify status:</b> <span id="vstatus">...</span></div>
+  <div class="btn" id="btnSave">Тест Supabase</div>
+  <div class="status" id="log"></div>
+</div>
 
 <script>
-const tg = window.Telegram?.WebApp;
 
-document.getElementById("tgExists").innerText =
-  "Telegram object exists: " + (!!tg);
+const log = (t)=>document.getElementById("log").innerText=t;
 
-document.getElementById("initLen").innerText =
-  "initData length: " + (tg?.initData?.length || 0);
+// ===== TELEGRAM =====
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
 
-document.getElementById("userId").innerText =
-  "User ID: " + (tg?.initDataUnsafe?.user?.id || "NULL");
+const user = tg.initDataUnsafe.user;
+const tgId = user?.id;
 
-document.getElementById("rawData").innerText =
-  "Raw initData: " + (tg?.initData || "EMPTY");
+document.getElementById("tgid").innerText = tgId;
+
+// ===== SUPABASE =====
+const supabase = window.supabase.createClient(
+  "https://wbjmvafzgwvspswchghx.supabase.co",
+  "sb_publishable_IkbenyjJMOsjztywoz0KXg_WJ3lHKqm"
+);
+
+// ===== LOAD USER =====
+async function loadUser(){
+  const { data, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("tg_id", tgId)
+    .maybeSingle();
+
+  if(error){
+    log("Ошибка загрузки: "+error.message);
+    return;
+  }
+
+  if(!data){
+    log("Пользователь не найден, создаём...");
+    await supabase.from("users").insert({
+      tg_id: tgId,
+      verify_status: "none",
+      role: "user"
+    });
+    document.getElementById("vstatus").innerText = "none";
+  } else {
+    document.getElementById("vstatus").innerText = data.verify_status;
+    log("Загружено успешно");
+  }
+}
+
+loadUser();
+
+// ===== TEST BUTTON =====
+document.getElementById("btnSave").onclick = async ()=>{
+  const { error } = await supabase
+    .from("users")
+    .update({ verify_status: "pending" })
+    .eq("tg_id", tgId);
+
+  if(error){
+    log("Ошибка: "+error.message);
+  } else {
+    log("Статус обновлён в pending");
+    document.getElementById("vstatus").innerText="pending";
+  }
+};
+
 </script>
-
 </body>
 </html>
