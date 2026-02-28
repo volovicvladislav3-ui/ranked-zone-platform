@@ -1,173 +1,76 @@
 <!doctype html>
-<html lang="ru">
+<html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Ranked Zone</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RZ</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
 <style>
-  body{
-    margin:0;
-    background:#0f1115;
-    color:#fff;
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
-    padding:18px;
-  }
-  .card{
-    background:#1b1f27;
-    padding:18px;
-    border-radius:16px;
-    margin-bottom:14px;
-    border:1px solid rgba(255,255,255,.08);
-  }
-  .btn{
-    width:100%;
-    padding:14px;
-    border-radius:14px;
-    border:0;
-    background:#f5a623;
-    color:#15110a;
-    font-weight:900;
-    font-size:16px;
-    margin-top:12px;
-    touch-action: manipulation;
-  }
-  .btn:active{ transform: scale(.99); }
-  .muted{ opacity:.75; font-size:13px; line-height:1.35; }
-  .row{ margin-top:10px; }
-  code{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; }
+body{background:#111;color:#fff;font-family:Arial;padding:20px}
+.card{background:#1e1e1e;padding:20px;border-radius:12px}
+button{margin-top:15px;padding:12px;border-radius:10px;border:0;background:#f5a623;font-weight:bold}
 </style>
 </head>
 <body>
 
-<h2 style="margin:0 0 12px 0;">Ranked Zone Debug</h2>
-
 <div class="card">
-  <div class="row"><b>Telegram:</b> <span id="tgok">...</span></div>
-  <div class="row"><b>User ID:</b> <span id="tgid">...</span></div>
-  <div class="row"><b>Supabase lib:</b> <span id="sblib">...</span></div>
-
-  <button class="btn" id="btnTest">КЛИК ТЕСТ + SUPABASE</button>
-
-  <div class="row muted" id="log">DBG: boot...</div>
-  <div class="row muted"><code id="err"></code></div>
+<div><b>User ID:</b> <span id="uid">...</span></div>
+<div><b>Status:</b> <span id="status">...</span></div>
+<button id="btn">TEST DB</button>
+<div id="log" style="margin-top:10px;font-size:13px;"></div>
 </div>
 
 <script>
-  const $ = (id)=>document.getElementById(id);
-  const log = (t)=>{$("log").textContent = "DBG: " + t;};
-  const err = (t)=>{$("err").textContent = t || "";};
+const SUPABASE_URL = "https://wbjmvafzgwvspswchghx.supabase.co";
+const SUPABASE_KEY = "sb_publishable_IkbenyjJMOsjztywoz0KXg_WJ3lHKqm";
 
-  // 1) СРАЗУ вешаем обработчик клика (до supabase, до всего)
-  $("btnTest").addEventListener("click", ()=> {
-    log("CLICK OK ✅ (если это появилось — клик работает)");
-  });
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
 
-  // 2) Telegram init (в try/catch чтобы не уронить скрипт)
-  let tgId = null;
-  try{
-    const tg = window.Telegram?.WebApp;
-    $("tgok").textContent = tg ? "OK" : "OFF";
-    tg?.ready();
-    tg?.expand();
-    tgId = tg?.initDataUnsafe?.user?.id || null;
-    $("tgid").textContent = tgId ? String(tgId) : "не получен";
-  }catch(e){
-    $("tgok").textContent = "ERR";
-    err("Telegram init error: " + (e?.message || e));
-  }
+const user = tg.initDataUnsafe?.user;
+const tgId = user?.id;
 
-  // 3) Динамически грузим supabase-js с 2 CDN (если 1 не загрузился)
-  function loadScript(url){
-    return new Promise((resolve, reject)=>{
-      const s = document.createElement("script");
-      s.src = url;
-      s.async = true;
-      s.onload = resolve;
-      s.onerror = ()=>reject(new Error("Failed: " + url));
-      document.head.appendChild(s);
-    });
-  }
+document.getElementById("uid").innerText = tgId || "NULL";
 
-  async function ensureSupabaseLib(){
-    try{
-      await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
-      if(!window.supabase?.createClient) throw new Error("jsdelivr loaded but supabase missing");
-      return "jsdelivr";
-    }catch(e1){
-      try{
-        await loadScript("https://unpkg.com/@supabase/supabase-js@2");
-        if(!window.supabase?.createClient) throw new Error("unpkg loaded but supabase missing");
-        return "unpkg";
-      }catch(e2){
-        throw new Error("Supabase lib not loaded (jsdelivr+unpkg failed)");
-      }
-    }
-  }
+document.getElementById("btn").onclick = async () => {
 
-  // 4) Твоя конфигурация
-  const SUPABASE_URL = "https://wbjmvafzgwvspswchghx.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_IkbenyjJMOsjztywoz0KXg_WJ3lHKqm";
+if(!tgId){
+document.getElementById("log").innerText = "NO TG ID";
+return;
+}
 
-  let supabase = null;
+try{
+const res = await fetch(
+SUPABASE_URL + "/rest/v1/users?on_conflict=tg_id",
+{
+method:"POST",
+headers:{
+"apikey": SUPABASE_KEY,
+"Authorization": "Bearer " + SUPABASE_KEY,
+"Content-Type": "application/json",
+"Prefer": "resolution=merge-duplicates"
+},
+body: JSON.stringify({
+tg_id: tgId,
+verify_status: "pending",
+role: "user"
+})
+}
+);
 
-  async function initSupabase(){
-    try{
-      log("loading supabase lib...");
-      const cdn = await ensureSupabaseLib();
-      $("sblib").textContent = "OK (" + cdn + ")";
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      log("supabase client created ✅");
-    }catch(e){
-      $("sblib").textContent = "FAIL ❌";
-      err(String(e?.message || e));
-      log("supabase init failed");
-    }
-  }
+if(!res.ok){
+const txt = await res.text();
+document.getElementById("log").innerText = "DB ERROR: " + txt;
+return;
+}
 
-  // 5) Теперь делаем реальный тест по кнопке (обновим обработчик, но не ломаем клик)
-  function attachSupabaseTest(){
-    $("btnTest").addEventListener("click", async ()=> {
-      if(!tgId){
-        log("NO TG ID ❌ открой мини-апп из бота");
-        return;
-      }
-      if(!supabase){
-        log("NO SUPABASE ❌ lib не загрузилась");
-        return;
-      }
+document.getElementById("log").innerText = "DB OK ✅";
 
-      log("writing to db...");
-      err("");
-
-      try{
-        // пробуем upsert (создать/обновить)
-        const { error } = await supabase
-          .from("users")
-          .upsert({ tg_id: Number(tgId), verify_status: "pending", role: "user" }, { onConflict: "tg_id" });
-
-        if(error){
-          err("DB error: " + error.message);
-          log("DB ERROR ❌");
-          return;
-        }
-
-        log("DB OK ✅ status=pending");
-      }catch(e){
-        err("Exception: " + (e?.message || e));
-        log("EXCEPTION ❌");
-      }
-    });
-  }
-
-  // start
-  (async ()=>{
-    await initSupabase();
-    attachSupabaseTest();
-    log("ready. tap button.");
-  })();
+}catch(e){
+document.getElementById("log").innerText = "ERROR: " + e.message;
+}
+};
 </script>
 
 </body>
