@@ -1,7 +1,7 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ranked Zone</title>
 
@@ -16,50 +16,64 @@ body{
   color:white;
   padding:20px;
 }
-h1{margin:0 0 15px 0}
+
+h1{margin-bottom:15px}
+
 .tabs{
   display:flex;
   gap:10px;
   margin-bottom:15px;
 }
+
 .tabbtn{
   flex:1;
   padding:12px;
   background:#222;
   border-radius:10px;
   text-align:center;
-  cursor:pointer;
   font-weight:bold;
+  cursor:pointer;
+  user-select:none;
 }
+
 .tabbtn.active{
   background:#f4a000;
   color:black;
 }
+
 .card{
   background:#1a1a1a;
   padding:15px;
   border-radius:12px;
 }
-.btn{
-  margin-top:10px;
+
+button{
   padding:12px;
   background:#f4a000;
   border:none;
-  border-radius:10px;
+  border-radius:8px;
   font-weight:bold;
   cursor:pointer;
+  margin-top:10px;
 }
+
 input{
   width:100%;
-  margin-top:8px;
   padding:10px;
   border-radius:8px;
   border:none;
+  margin-top:8px;
 }
+
 .status{
   margin-top:10px;
   font-size:13px;
   opacity:0.7;
+}
+
+/* ГАРАНТИЯ что клики не блокируются */
+*{
+  pointer-events:auto !important;
 }
 </style>
 </head>
@@ -82,19 +96,18 @@ input{
   <input id="standoffId" placeholder="Standoff ID">
   <input id="standoffNick" placeholder="Ник">
 
-  <button class="btn" type="button" onclick="saveProfile()">Сохранить</button>
-  <button class="btn" type="button" onclick="testDb()">TEST DB</button>
+  <button type="button" onclick="saveProfile()">Сохранить</button>
+  <button type="button" onclick="testDb()">TEST DB</button>
 
   <div class="status" id="status">Загрузка...</div>
 </div>
 
 <div id="match" class="card" style="display:none;">
-Матчмейкинг скоро 🚀
+  Матчмейкинг работает 🚀
 </div>
 
 <div id="admin" class="card" style="display:none;">
-Админ панель 👑
-<button class="btn" onclick="setVerify('verified')">Поставить VERIFIED</button>
+  Админ панель 👑
 </div>
 
 <script>
@@ -156,8 +169,6 @@ async function loadUser(){
 
   document.getElementById("role").innerText=data.role;
   document.getElementById("verify").innerText=data.verify_status;
-  document.getElementById("standoffId").value=data.standoff_id || "";
-  document.getElementById("standoffNick").value=data.standoff_nick || "";
 
   if(data.role==="admin"){
     document.getElementById("adminTab").style.display="block";
@@ -172,8 +183,7 @@ async function saveProfile(){
   await supabase.from("users").update({
     standoff_id:document.getElementById("standoffId").value,
     standoff_nick:document.getElementById("standoffNick").value,
-    verify_status:"pending",
-    updated_at:new Date().toISOString()
+    verify_status:"pending"
   }).eq("tg_id",tgId);
 
   loadUser();
@@ -182,13 +192,6 @@ async function saveProfile(){
 async function testDb(){
   let {error}=await supabase.from("users").select("tg_id").limit(1);
   document.getElementById("status").innerText=error?error.message:"DB OK ✅";
-}
-
-async function setVerify(val){
-  await supabase.from("users").update({
-    verify_status:val
-  }).eq("tg_id",tgId);
-  loadUser();
 }
 
 loadUser();
