@@ -1,155 +1,194 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ranked Zone</title>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
 <style>
-body {
-    margin: 0;
-    background: #0f0f0f;
-    color: white;
-    font-family: Arial, sans-serif;
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:#0f0f0f;
+  color:white;
+  padding:20px;
 }
-
-.wrap {
-    padding: 20px;
+h1{margin:0 0 15px 0}
+.tabs{
+  display:flex;
+  gap:10px;
+  margin-bottom:15px;
 }
-
-.card {
-    background: #1c1c1c;
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 20px;
+.tabbtn{
+  flex:1;
+  padding:12px;
+  background:#222;
+  border-radius:10px;
+  text-align:center;
+  cursor:pointer;
+  font-weight:bold;
 }
-
-.btn {
-    background: #ff9f00;
-    border: none;
-    padding: 12px 16px;
-    border-radius: 8px;
-    color: black;
-    font-weight: bold;
-    margin-top: 10px;
-    cursor: pointer;
+.tabbtn.active{
+  background:#f4a000;
+  color:black;
 }
-
-.tabs {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
+.card{
+  background:#1a1a1a;
+  padding:15px;
+  border-radius:12px;
 }
-
-.tabbtn {
-    flex: 1;
-    padding: 10px;
-    background: #222;
-    border-radius: 8px;
-    text-align: center;
-    cursor: pointer;
+.btn{
+  margin-top:10px;
+  padding:12px;
+  background:#f4a000;
+  border:none;
+  border-radius:10px;
+  font-weight:bold;
+  cursor:pointer;
 }
-
-.tabbtn.active {
-    background: #ff9f00;
-    color: black;
-    font-weight: bold;
+input{
+  width:100%;
+  margin-top:8px;
+  padding:10px;
+  border-radius:8px;
+  border:none;
+}
+.status{
+  margin-top:10px;
+  font-size:13px;
+  opacity:0.7;
 }
 </style>
 </head>
 
 <body>
-<div class="wrap">
 
-<h2>Ranked Zone</h2>
+<h1>Ranked Zone</h1>
 
 <div class="tabs">
-<div class="tabbtn active" onclick="showTab('profile')">Профиль</div>
-<div class="tabbtn" onclick="showTab('match')">Матчмейкинг</div>
-<div class="tabbtn" onclick="showTab('admin')" id="adminTab" style="display:none;">Админ</div>
+  <div class="tabbtn active" onclick="showTab('profile', this)">Профиль</div>
+  <div class="tabbtn" onclick="showTab('match', this)">Матчмейкинг</div>
+  <div class="tabbtn" onclick="showTab('admin', this)" id="adminTab" style="display:none;">Админ</div>
 </div>
 
 <div id="profile" class="card">
-<div><b>Telegram ID:</b> <span id="tgId">...</span></div>
-<div><b>Роль:</b> <span id="role">...</span></div>
-<button class="btn" onclick="saveProfile()">Заполнить профиль</button>
+  <div>Telegram ID: <b id="tgId">...</b></div>
+  <div>Роль: <b id="role">...</b></div>
+  <div>Статус: <b id="verify">...</b></div>
+
+  <input id="standoffId" placeholder="Standoff ID">
+  <input id="standoffNick" placeholder="Ник">
+
+  <button class="btn" type="button" onclick="saveProfile()">Сохранить</button>
+  <button class="btn" type="button" onclick="testDb()">TEST DB</button>
+
+  <div class="status" id="status">Загрузка...</div>
 </div>
 
 <div id="match" class="card" style="display:none;">
-<div>Матчмейкинг скоро будет 🚀</div>
+Матчмейкинг скоро 🚀
 </div>
 
 <div id="admin" class="card" style="display:none;">
-<div>Админ панель 👑</div>
-</div>
-
+Админ панель 👑
+<button class="btn" onclick="setVerify('verified')">Поставить VERIFIED</button>
 </div>
 
 <script>
 const SUPABASE_URL = "https://wbjmvafzgwvspswchghx.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_IkbenyjJMOsjztywoz0KXg_WJ3lHKqm";
+const ADMIN_ID = 8001108991;
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const tg = window.Telegram.WebApp;
-tg.ready();
+const tg = window.Telegram?.WebApp;
+if(tg){
+  tg.ready();
+  tg.expand();
+}
 
-document.addEventListener('touchstart', ()=>{}, {passive:true});
-
-const user = tg.initDataUnsafe?.user;
+const user = tg?.initDataUnsafe?.user;
 const tgId = user?.id;
 
 document.getElementById("tgId").innerText = tgId || "NULL";
 
-async function loadUser() {
-    if (!tgId) return;
+function showTab(tab, el){
+  document.getElementById("profile").style.display="none";
+  document.getElementById("match").style.display="none";
+  document.getElementById("admin").style.display="none";
 
-    let { data } = await supabase
-        .from("users")
-        .select("*")
-        .eq("tg_id", tgId)
-        .single();
+  document.getElementById(tab).style.display="block";
 
-    if (data) {
-        document.getElementById("role").innerText = data.role;
-
-        if (data.role === "admin") {
-            document.getElementById("adminTab").style.display = "block";
-        }
-    }
+  document.querySelectorAll(".tabbtn").forEach(b=>b.classList.remove("active"));
+  if(el) el.classList.add("active");
 }
 
-async function saveProfile() {
-    const nick = prompt("Введите ник:");
-    const standoff = prompt("Введите Standoff ID:");
+async function loadUser(){
+  if(!tgId){
+    document.getElementById("status").innerText="Открой через кнопку в боте";
+    return;
+  }
 
-    if (!nick || !standoff) return;
+  let {data,error}=await supabase
+    .from("users")
+    .select("*")
+    .eq("tg_id",tgId)
+    .maybeSingle();
 
-    await supabase
-        .from("users")
-        .upsert({
-            tg_id: tgId,
-            username: user.username,
-            first_name: user.first_name,
-            standoff_id: standoff,
-            standoff_nick: nick
-        });
+  if(error){
+    document.getElementById("status").innerText=error.message;
+    return;
+  }
 
-    alert("Сохранено ✅");
+  if(!data){
+    await supabase.from("users").insert({
+      tg_id:tgId,
+      username:user?.username || null,
+      first_name:user?.first_name || null,
+      role:(tgId===ADMIN_ID?"admin":"user"),
+      verify_status:"none"
+    });
+    return loadUser();
+  }
+
+  document.getElementById("role").innerText=data.role;
+  document.getElementById("verify").innerText=data.verify_status;
+  document.getElementById("standoffId").value=data.standoff_id || "";
+  document.getElementById("standoffNick").value=data.standoff_nick || "";
+
+  if(data.role==="admin"){
+    document.getElementById("adminTab").style.display="block";
+  }
+
+  document.getElementById("status").innerText="Готово ✅";
 }
 
-function showTab(tab) {
-    document.getElementById("profile").style.display = "none";
-    document.getElementById("match").style.display = "none";
-    document.getElementById("admin").style.display = "none";
+async function saveProfile(){
+  if(!tgId) return;
 
-    document.getElementById(tab).style.display = "block";
+  await supabase.from("users").update({
+    standoff_id:document.getElementById("standoffId").value,
+    standoff_nick:document.getElementById("standoffNick").value,
+    verify_status:"pending",
+    updated_at:new Date().toISOString()
+  }).eq("tg_id",tgId);
 
-    document.querySelectorAll(".tabbtn").forEach(b => b.classList.remove("active"));
-    event.target.classList.add("active");
+  loadUser();
+}
+
+async function testDb(){
+  let {error}=await supabase.from("users").select("tg_id").limit(1);
+  document.getElementById("status").innerText=error?error.message:"DB OK ✅";
+}
+
+async function setVerify(val){
+  await supabase.from("users").update({
+    verify_status:val
+  }).eq("tg_id",tgId);
+  loadUser();
 }
 
 loadUser();
